@@ -30,6 +30,7 @@ import sys
 sys.path.append('../../../../controllers_shared/python_based')
 from pid_controller import pid_velocity_fixed_height_controller
 
+
 FLYING_ATTITUDE = 1
 MAX_FORWARD_SPEED = 0.5
 MAX_SIDEWAY_SPEED = 0.5
@@ -304,19 +305,15 @@ def run_robot(robot):
 
     print('finnished lifiting off')
 
-    go_to('tl_1')
-    go_to('tl_2')
-    go_to('ml_2')
-    go_to('ml')
-    go_to('ml_1')
-    go_to('k')
-
     while robot.step(timestep) != -1:
         stay_in_position()
 
     robot.cleanup()
 
 if __name__ == '__main__':
-    robot = Robot()
-    run_robot(robot)
+    # robot = Robot()
+    # run_robot(robot)
+    pass
+    
+
     

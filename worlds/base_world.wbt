@@ -10,12 +10,14 @@ EXTERNPROTO "../protos/TrackOne.proto"
 EXTERNPROTO "../protos/LineTrack.proto"
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/appearances/protos/BlanketFabric.proto"
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/objects/apartment_structure/protos/Wall.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/objects/kitchen/components/protos/Worktop.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/objects/kitchen/utensils/protos/Plate.proto"
 
 WorldInfo {
 }
 Viewpoint {
-  orientation 0.3119540640357355 0.012485417250704395 -0.9500151452938337 3.0655748064498964
-  position 12.660821228314902 -3.7717041086133287 9.318423610617693
+  orientation 0.20526797290359183 0.07145799777379484 -0.9760936501454206 2.486463576484715
+  position 7.414043127547307 5.79353438760264 5.805679944443026
   follow "inside"
 }
 TexturedBackground {
@@ -40,6 +42,52 @@ RectangleArena {
       ]
     }
   }
+}
+Worktop {
+  translation -6.59 2.59 0.55
+  size 0.8 4 1
+}
+Worktop {
+  translation -7 0.19 0.55
+  name "worktop(1)"
+  size 1.6 0.8 1
+}
+Plate {
+  translation -6.59 1.18 1.09
+  radius 0.3
+}
+Plate {
+  translation -6.59 2.4 1.09
+  name "plate(1)"
+  radius 0.3
+}
+Plate {
+  translation -6.59 3.67 1.09
+  name "plate(2)"
+  radius 0.3
+}
+Pedestrian {
+  translation -7.37 2.37 1.27
+  name "chef"
+  shirtColor 1 1 1
+  bodySlot [
+    Solid {
+      translation 0.041 0 0.7
+      children [
+        Shape {
+          appearance PBRAppearance {
+            roughness 1
+            metalness 0
+          }
+          geometry Cylinder {
+            height 0.3
+            radius 0.08
+          }
+        }
+      ]
+      name "solid(1)"
+    }
+  ]
 }
 RectangleArena {
   translation -1.41 -9.09 0
@@ -166,6 +214,7 @@ Chair {
 Pedestrian {
   translation -2.44 -6.97 1.27
   rotation 0 0 1 1.5708
+  controller "my_pedestrain_controller"
 }
 Pedestrian {
   translation -3.47 -7.55 1.27
@@ -1014,7 +1063,7 @@ Robot {
   controller "main_computer"
 }
 Robot {
-  translation -7.34684e-19 -1.10063e-18 0.04
+  translation -6.24535 -3.09926 0.09
   rotation -5.585537077620372e-15 3.708507027793113e-15 -1 0.004934367106629954
   children [
     Receiver {
@@ -1431,4 +1480,12 @@ Wall {
   rotation 0 0 1 1.57
   name "wall(4)"
   size 0.2 4 2.4
+}
+Pedestrian {
+  translation -3 0 1.26
+  name "pedestrian(2)"
+  controller "my_pedestrain_controller"
+  controllerArgs [
+    "--speed=1.5"
+  ]
 }
