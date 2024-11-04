@@ -16,8 +16,8 @@ EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/project
 WorldInfo {
 }
 Viewpoint {
-  orientation 0.20526797290359183 0.07145799777379484 -0.9760936501454206 2.486463576484715
-  position 7.414043127547307 5.79353438760264 5.805679944443026
+  orientation 0.4426122700497364 -0.007745023672707166 -0.896679649044032 3.172964677936597
+  position 3.0824139059483646 -3.493539018069865 8.674783391835675
   follow "inside"
 }
 TexturedBackground {
@@ -53,16 +53,19 @@ Worktop {
   size 1.6 0.8 1
 }
 Plate {
-  translation -6.59 1.18 1.09
+  translation -6.59 1.18 1.0499411399999996
+  rotation -0.7622523701811291 -0.6472757556845339 0.0023281443826876237 2.825627719588219e-16
   radius 0.3
 }
 Plate {
-  translation -6.59 2.4 1.09
+  translation -6.59 2.4 1.0499411399999996
+  rotation 0.6376956501769876 -0.7702858348672518 0.0019975855951902435 1.9057617847844038e-16
   name "plate(1)"
   radius 0.3
 }
 Plate {
-  translation -6.59 3.67 1.09
+  translation -6.59 3.67 1.0499411399999996
+  rotation 0.39346539448435935 0.9193392689613658 0.0005402673865485034 3.4862538290244814e-16
   name "plate(2)"
   radius 0.3
 }
@@ -110,117 +113,106 @@ RectangleArena {
 }
 RoundTable {
   translation 2.5 -2.55 -0.01560081417268655
-  rotation -0.9347032785386005 0.31156775951285653 -0.17104184377318324 3.2725046332459707e-18
+  rotation 0.33812961820948306 -0.9392489394708246 -0.05898975328343238 4.523148291364063e-18
   name "round table BL"
   physics Physics {
   }
 }
-Chair {
+DEF tbl_bl_1 Chair {
   translation 1.68 -2.62 0
 }
-Chair {
+DEF tbl_bl_2 Chair {
   translation 2.45944 -3.38082 0
   rotation 0 0 1 1.57
   name "chair(4)"
 }
-Chair {
+DEF tbl_bl_3 Chair {
   translation 3.33078 -2.58215 0
   rotation 0 0 1 3.14
   name "chair(5)"
 }
-Chair {
+DEF tbl_bl_4 Chair {
   translation 2.44218 -1.69312 0
   rotation 0 0 1 -1.57
   name "chair(6)"
 }
 RoundTable {
   translation 2.5 2.5 -0.01560081417268655
-  rotation -0.9347032785386005 0.31156775951285653 -0.17104184377318324 3.2725046332459707e-18
+  rotation 0.33812961820948306 -0.9392489394708246 -0.05898975328343238 4.523148291364063e-18
   name "round table BR"
   physics Physics {
   }
 }
-Chair {
+DEF tbl_br_1 Chair {
   translation 2.43816 3.34688 0
   rotation 0 0 1 -1.57
   name "chair(9)"
 }
-Chair {
+DEF tbl_br_2 Chair {
   translation 3.33907 2.63785 0
   rotation 0 0 1 3.14
   name "chair(8)"
 }
-Chair {
+DEF tbl_br_3 Chair {
   translation 2.4635 1.63918 0
   rotation 0 0 1 1.57
   name "chair(7)"
 }
-Chair {
+DEF tbl_br_4 Chair {
   translation 1.64 2.45 0
   name "chair(1)"
 }
 RoundTable {
   translation -2.5 2.5 -0.01560081417268655
-  rotation -0.9347032785386005 0.31156775951285653 -0.17104184377318324 3.2725046332459707e-18
+  rotation 0.33812961820948306 -0.9392489394708246 -0.05898975328343238 4.523148291364063e-18
   name "round table TR"
   physics Physics {
   }
 }
-Chair {
+DEF tbl_tr_1 Chair {
   translation -2.69188 3.38285 0
   rotation 0 0 1 -1.57
   name "chair(12)"
 }
-Chair {
+DEF tbl_tr_2 Chair {
   translation -2.7165 1.6433 0
   rotation 0 0 1 1.57
   name "chair(11)"
 }
-Chair {
+DEF tbl_tr_3 Chair {
   translation -1.79093 2.64601 0
   rotation 0 0 1 3.14
   name "chair(10)"
 }
-Chair {
+DEF tbl_tr_4 Chair {
   translation -3.35 2.38 0
   name "chair(2)"
 }
 RoundTable {
-  translation -2.5 -2.5 -0.01560081417268655
-  rotation -0.9347032785386005 0.31156775951285653 -0.17104184377318324 3.2725046332459707e-18
+  translation -2.501304593078251 -2.499997922048357 -0.017309449387004405
+  rotation -0.0015964613704918574 -0.9999987256494172 -3.2609774088206877e-06 0.030761643289252072
   name "round table TL"
   physics Physics {
   }
 }
-Chair {
+DEF tbl_tl_1 Chair {
   translation -1.7492 -2.56399 0
   rotation 0 0 1 3.14
   name "chair(15)"
 }
-Chair {
+DEF tbl_tl_2 Chair {
   translation -2.42053 -3.34699 0
   rotation 0 0 1 1.57
   name "chair(14)"
 }
-Chair {
+DEF tbl_tl_3 Chair {
   translation -2.76786 -1.65738 0
   rotation 0 0 1 -1.57
   name "chair(13)"
 }
-Chair {
+DEF tbl_tl_4 Chair {
   translation -3.34 -2.54 0
   name "chair(3)"
-}
-Pedestrian {
-  translation -2.44 -6.97 1.27
-  rotation 0 0 1 1.5708
-  controller "my_pedestrain_controller"
-}
-Pedestrian {
-  translation -3.47 -7.55 1.27
-  rotation 0 0 1 1.5708
-  name "pedestrian(1)"
-  shirtColor 1 0 0
 }
 TrackOne {
   translation 0 -2.5 -0.0685
@@ -716,8 +708,8 @@ LineTrack {
   color 0 0 1
 }
 Robot {
-  translation -0.196354 -1.42932 0.699934
-  rotation 0.010291209524042114 0.0008296333759598924 -0.9999466999370485 1.5228335463288776
+  translation -0.19570973207442655 -1.429288744713766 0.6954364484432901
+  rotation 0.009806858346296559 0.0012876499600153564 -0.9999510825470195 1.5228682763750367
   children [
     GPS {
       name "back_gps"
@@ -906,12 +898,12 @@ Robot {
     }
     BallJoint {
       jointParameters BallJointParameters {
-        position 3.2551577638375515
+        position 3.2553866331237664
         anchor 0 0.5 -0.505
       }
       endPoint Solid {
-        translation -0.018383777259005613 0.5082251671972029 -0.5061497609423501
-        rotation -0.9094512653146949 -0.22774815725405356 0.34789247316503324 3.6908186798267226
+        translation -0.018379184999535836 0.5082296310968442 -0.5061150819561009
+        rotation 0.9094419602690224 0.2276636989548305 -0.34797206939672914 2.592667707033262
         children [
           DEF ball_h Shape {
             appearance PBRAppearance {
@@ -932,7 +924,7 @@ Robot {
     }
     HingeJoint {
       jointParameters HingeJointParameters {
-        position 18.199184782688505
+        position 18.199187623944724
         anchor 0.25 0 -0.305
       }
       device [
@@ -945,8 +937,8 @@ Robot {
         }
       ]
       endPoint Solid {
-        translation 0.2556438497863207 0.0045627259701821275 -0.30205191511791646
-        rotation -0.6878963851553505 0.09339503740919235 -0.7197749163992431 2.964447849540747
+        translation 0.2556438497863207 0.004562717593899186 -0.3020519021540548
+        rotation -0.6878963186948468 0.09339606804690462 -0.719774846184177 2.964445895050959
         children [
           DEF Wheel Shape {
             appearance PBRAppearance {
@@ -967,7 +959,7 @@ Robot {
     }
     HingeJoint {
       jointParameters HingeJointParameters {
-        position 194.3355368518897
+        position 194.33553947403342
         anchor -0.25 0 -0.305
       }
       device [
@@ -980,8 +972,8 @@ Robot {
         }
       ]
       endPoint Solid {
-        translation -0.26049582133073645 0.0043161083384444495 -0.3091963520805787
-        rotation -0.677894007117365 0.16592786455293493 -0.7161896807964109 2.8168107086581924
+        translation -0.26049582133073645 0.004316119341867868 -0.309196340763108
+        rotation -0.677893891027525 0.16592882768989736 -0.7161895675371279 2.816808931122838
         children [
           USE Wheel
         ]
@@ -1063,9 +1055,26 @@ Robot {
   controller "main_computer"
 }
 Robot {
-  translation -6.24535 -3.09926 0.09
-  rotation -5.585537077620372e-15 3.708507027793113e-15 -1 0.004934367106629954
+  translation -2.55235 -4.51774 0.014990193189473653
+  rotation -1.3882311791244793e-14 -1.3874939845688942e-14 -1 0.0049343671066299855
   children [
+    Display {
+      translation 0 0 0.11
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColorMap ImageTexture {
+              filtering 0
+            }
+            roughness 1
+            metalness 0
+          }
+          geometry Box {
+            size 0.01 0.15 0.1
+          }
+        }
+      ]
+    }
     Receiver {
       translation 0 -0.01 0.02
       children [
@@ -1103,9 +1112,9 @@ Robot {
           name "antena"
         }
       ]
-      channel 1
+      channel 7
       allowedChannels [
-        1
+        7, 1
       ]
     }
     PointLight {
@@ -1354,6 +1363,7 @@ Robot {
       }
       slowHelix Solid {
         translation 0.031 -0.031 0.008
+        rotation 0 0 -1 3.7443189687982184
         children [
           DEF PROP_SHAPE Shape {
             appearance DEF PLASTIC PBRAppearance {
@@ -1388,6 +1398,7 @@ Robot {
       }
       slowHelix Solid {
         translation -0.031 -0.031 0.008
+        rotation 0 0 1 3.744319048017026
         children [
           USE PROP_SHAPE
         ]
@@ -1412,6 +1423,7 @@ Robot {
       }
       slowHelix Solid {
         translation -0.031 0.031 0.008
+        rotation 0 0 -1 4.420159131552175
         children [
           USE PROP_SHAPE
         ]
@@ -1436,6 +1448,7 @@ Robot {
       }
       slowHelix DEF PROP Solid {
         translation 0.031 0.031 0.007
+        rotation 0 0 1 4.4201590633782715
         children [
           USE PROP_SHAPE
         ]
@@ -1453,6 +1466,16 @@ Robot {
     mass 0.05
   }
   controller "my_drone_controller"
+}
+Robot {
+  children [
+    Emitter {
+      channel 7
+    }
+  ]
+  name "world_generator"
+  controller "world_supervisor"
+  supervisor TRUE
 }
 Wall {
   translation -7.93 0 0
@@ -1481,11 +1504,599 @@ Wall {
   name "wall(4)"
   size 0.2 4 2.4
 }
-Pedestrian {
-  translation -3 0 1.26
-  name "pedestrian(2)"
+Wall {
+  translation -0.689413 -11.8085 0
+  rotation 0 0 1 -0.000795307179585869
+  name "wall(5)"
+  size 0.2 1.5 2.4
+}
+Wall {
+  translation 0.540587 -11.8085 0
+  rotation 0 0 1 -0.000795307179585869
+  name "wall(6)"
+  size 0.2 1.5 2.4
+}
+Wall {
+  translation -0.019933 -12.4585 0
+  rotation 0 0 1 -1.571595307179586
+  name "wall(7)"
+  size 0.2 1.3 2.4
+}
+Wall {
+  translation -0.0188221 -11.0485 2.3
+  rotation 0.5775038949286623 0.5770428950125367 -0.5775038949286623 2.09485
+  name "wall(8)"
+  size 0.2 1.3 1.4
+}
+DEF g1_p1 Pedestrian {
+  translation 0 -12 1.26
+  rotation 0 0 1 1.5708
+  name "g1_p1"
   controller "my_pedestrain_controller"
   controllerArgs [
     "--speed=1.5"
+  ]
+  bodySlot [
+    Receiver {
+      channel 7
+      allowedChannels [
+        7
+      ]
+    }
+  ]
+}
+DEF g1_p2 Pedestrian {
+  translation 0 -12 1.26
+  rotation 0 0 1 1.5708
+  name "g1_p2"
+  controller "my_pedestrain_controller"
+  controllerArgs [
+    "--speed=1.5"
+  ]
+  bodySlot [
+    Receiver {
+      channel 7
+      allowedChannels [
+        7
+      ]
+    }
+  ]
+}
+DEF g1_p3 Pedestrian {
+  translation -0.0599986 -11.87 1.26
+  rotation 0 0 1 1.5708
+  name "g1_p3"
+  controller "my_pedestrain_controller"
+  controllerArgs [
+    "--speed=1.5"
+  ]
+  bodySlot [
+    Receiver {
+      channel 7
+      allowedChannels [
+        7
+      ]
+    }
+  ]
+}
+DEF g1_p4 Pedestrian {
+  translation -0.04 -11.89 1.26
+  rotation 0 0 1 1.5708
+  name "g1_p4"
+  controller "my_pedestrain_controller"
+  controllerArgs [
+    "--speed=1.5"
+  ]
+  bodySlot [
+    Receiver {
+      channel 7
+      allowedChannels [
+        7
+      ]
+    }
+  ]
+}
+DEF g2_p1 Pedestrian {
+  translation -0.03 -11.95 1.26
+  rotation 0 0 1 1.5708
+  name "g2_p1"
+  controller "my_pedestrain_controller"
+  controllerArgs [
+    "--speed=1.5"
+  ]
+  shirtColor 1 0 0
+  bodySlot [
+    Receiver {
+      channel 7
+      allowedChannels [
+        7
+      ]
+    }
+  ]
+}
+DEF g2_p2 Pedestrian {
+  translation -0.029993 -11.86 1.26
+  rotation 0 0 1 1.5708
+  name "g2_p2"
+  controller "my_pedestrain_controller"
+  controllerArgs [
+    "--speed=1.5"
+  ]
+  shirtColor 1 0 0
+  bodySlot [
+    Receiver {
+      channel 7
+      allowedChannels [
+        7
+      ]
+    }
+  ]
+}
+DEF g2_p3 Pedestrian {
+  translation -0.079994 -11.77 1.26
+  rotation 0 0 1 1.5708
+  name "g2_p3"
+  controller "my_pedestrain_controller"
+  controllerArgs [
+    "--speed=1.5"
+  ]
+  shirtColor 1 0 0
+  bodySlot [
+    Receiver {
+      channel 7
+      allowedChannels [
+        7
+      ]
+    }
+  ]
+}
+DEF g2_p4 Pedestrian {
+  translation 0.0199949 -11.85 1.26
+  rotation 0 0 1 1.5708
+  name "g2_p4"
+  controller "my_pedestrain_controller"
+  controllerArgs [
+    "--speed=1.5"
+  ]
+  shirtColor 1 0 0
+  bodySlot [
+    Receiver {
+      channel 7
+      allowedChannels [
+        7
+      ]
+    }
+  ]
+}
+DEF g3_p1 Pedestrian {
+  translation -0.0999928 -11.78 1.26
+  rotation 0 0 1 1.5708
+  name "g3_p1"
+  controller "my_pedestrain_controller"
+  controllerArgs [
+    "--speed=1.5"
+  ]
+  shirtColor 0 0 1
+  bodySlot [
+    Receiver {
+      channel 7
+      allowedChannels [
+        7
+      ]
+    }
+  ]
+}
+DEF g3_p2 Pedestrian {
+  translation 4.3673e-06 -11.75 1.26
+  rotation 0 0 1 1.5708
+  name "g3_p2"
+  controller "my_pedestrain_controller"
+  controllerArgs [
+    "--speed=1.5"
+  ]
+  shirtColor 0 0 1
+  bodySlot [
+    Receiver {
+      channel 7
+      allowedChannels [
+        7
+      ]
+    }
+  ]
+}
+DEF g3_p3 Pedestrian {
+  translation 0.0100031 -11.75 1.26
+  rotation 0 0 1 1.5708
+  name "g3_p3"
+  controller "my_pedestrain_controller"
+  controllerArgs [
+    "--speed=1.5"
+  ]
+  shirtColor 0 0 1
+  bodySlot [
+    Receiver {
+      channel 7
+      allowedChannels [
+        7
+      ]
+    }
+  ]
+}
+DEF g3_p4 Pedestrian {
+  translation -0.019996 -11.79 1.26
+  rotation 0 0 1 1.5708
+  name "g3_p4"
+  controller "my_pedestrain_controller"
+  controllerArgs [
+    "--speed=1.5"
+  ]
+  shirtColor 0 0 1
+  bodySlot [
+    Receiver {
+      channel 7
+      allowedChannels [
+        7
+      ]
+    }
+  ]
+}
+DEF g4_p1 Pedestrian {
+  translation 6e-06 -11.85 1.26
+  rotation 0 0 1 1.5708
+  name "g4_p1"
+  controller "my_pedestrain_controller"
+  controllerArgs [
+    "--speed=1.5"
+  ]
+  shirtColor 1 0 1
+  bodySlot [
+    Receiver {
+      channel 7
+      allowedChannels [
+        7
+      ]
+    }
+  ]
+}
+DEF g4_p2 Pedestrian {
+  translation 0.050005 -11.81 1.26
+  rotation 0 0 1 1.5708
+  name "g4_p2"
+  controller "my_pedestrain_controller"
+  controllerArgs [
+    "--speed=1.5"
+  ]
+  shirtColor 1 0 1
+  bodySlot [
+    Receiver {
+      channel 7
+      allowedChannels [
+        7
+      ]
+    }
+  ]
+}
+DEF g4_p3 Pedestrian {
+  translation 3e-06 -11.82 1.26
+  rotation 0 0 1 1.5708
+  name "g4_p3"
+  controller "my_pedestrain_controller"
+  controllerArgs [
+    "--speed=1.5"
+  ]
+  shirtColor 1 0 1
+  bodySlot [
+    Receiver {
+      channel 7
+      allowedChannels [
+        7
+      ]
+    }
+  ]
+}
+DEF g4_p4 Pedestrian {
+  translation -0.0499973 -11.94 1.26
+  rotation 0 0 1 1.5708
+  name "g4_p4"
+  controller "my_pedestrain_controller"
+  controllerArgs [
+    "--speed=1.5"
+  ]
+  shirtColor 1 0 1
+  bodySlot [
+    Receiver {
+      channel 7
+      allowedChannels [
+        7
+      ]
+    }
+  ]
+}
+DEF g5_p1 Pedestrian {
+  translation 0.03 -11.89 1.26
+  rotation 0 0 1 1.5708
+  name "g5_p1"
+  controller "my_pedestrain_controller"
+  controllerArgs [
+    "--speed=1.5"
+  ]
+  shirtColor 1 1 0
+  bodySlot [
+    Receiver {
+      channel 7
+      allowedChannels [
+        7
+      ]
+    }
+  ]
+}
+DEF g5_p2 Pedestrian {
+  translation 1.99837e-05 -11.9 1.26
+  rotation 0 0 1 1.5708
+  name "g5_p2"
+  controller "my_pedestrain_controller"
+  controllerArgs [
+    "--speed=1.5"
+  ]
+  shirtColor 1 1 0
+  bodySlot [
+    Receiver {
+      channel 7
+      allowedChannels [
+        7
+      ]
+    }
+  ]
+}
+DEF g5_p3 Pedestrian {
+  translation 0.0500009 -11.84 1.26
+  rotation 0 0 1 1.5708
+  name "g5_p3"
+  controller "my_pedestrain_controller"
+  controllerArgs [
+    "--speed=1.5"
+  ]
+  shirtColor 1 1 0
+  bodySlot [
+    Receiver {
+      channel 7
+      allowedChannels [
+        7
+      ]
+    }
+  ]
+}
+DEF g5_p4 Pedestrian {
+  translation -0.07 -11.77 1.26
+  rotation 0 0 1 1.5708
+  name "g5_p4"
+  controller "my_pedestrain_controller"
+  controllerArgs [
+    "--speed=1.5"
+  ]
+  shirtColor 1 1 0
+  bodySlot [
+    Receiver {
+      channel 7
+      allowedChannels [
+        7
+      ]
+    }
+  ]
+}
+DEF g6_p1 Pedestrian {
+  translation -0.059993 -11.82 1.26
+  rotation 0 0 1 1.5708
+  name "g6_p1"
+  controller "my_pedestrain_controller"
+  controllerArgs [
+    "--speed=1.5"
+  ]
+  shirtColor 0 1 1
+  bodySlot [
+    Receiver {
+      channel 7
+      allowedChannels [
+        7
+      ]
+    }
+  ]
+}
+DEF g6_p2 Pedestrian {
+  translation 0.0600128 -11.83 1.26
+  rotation 0 0 1 1.5708
+  name "g6_p2"
+  controller "my_pedestrain_controller"
+  controllerArgs [
+    "--speed=1.5"
+  ]
+  shirtColor 0 1 1
+  bodySlot [
+    Receiver {
+      channel 7
+      allowedChannels [
+        7
+      ]
+    }
+  ]
+}
+DEF g6_p3 Pedestrian {
+  translation -0.039999 -11.76 1.26
+  rotation 0 0 1 1.5708
+  name "g6_p3"
+  controller "my_pedestrain_controller"
+  controllerArgs [
+    "--speed=1.5"
+  ]
+  shirtColor 0 1 1
+  bodySlot [
+    Receiver {
+      channel 7
+      allowedChannels [
+        7
+      ]
+    }
+  ]
+}
+DEF g6_p4 Pedestrian {
+  translation 0.050006 -11.87 1.26
+  rotation 0 0 1 1.5708
+  name "g6_p4"
+  controller "my_pedestrain_controller"
+  controllerArgs [
+    "--speed=1.5"
+  ]
+  shirtColor 0 1 1
+  bodySlot [
+    Receiver {
+      channel 7
+      allowedChannels [
+        7
+      ]
+    }
+  ]
+}
+DEF g7_p1 Pedestrian {
+  translation -0.03 -11.77 1.26
+  rotation 0 0 1 1.5708
+  name "g7_p1"
+  controller "my_pedestrain_controller"
+  controllerArgs [
+    "--speed=1.5"
+  ]
+  shirtColor 1 0.4 0
+  bodySlot [
+    Receiver {
+      channel 7
+      allowedChannels [
+        7
+      ]
+    }
+  ]
+}
+DEF g7_p2 Pedestrian {
+  translation -0.11 -11.82 1.26
+  rotation 0 0 1 1.5708
+  name "g7_p2"
+  controller "my_pedestrain_controller"
+  controllerArgs [
+    "--speed=1.5"
+  ]
+  shirtColor 1 0.4 0
+  bodySlot [
+    Receiver {
+      channel 7
+      allowedChannels [
+        7
+      ]
+    }
+  ]
+}
+DEF g7_p3 Pedestrian {
+  translation 0.01 -11.78 1.26
+  rotation 0 0 1 1.5708
+  name "g7_p3"
+  controller "my_pedestrain_controller"
+  controllerArgs [
+    "--speed=1.5"
+  ]
+  shirtColor 1 0.4 0
+  bodySlot [
+    Receiver {
+      channel 7
+      allowedChannels [
+        7
+      ]
+    }
+  ]
+}
+DEF g7_p4 Pedestrian {
+  translation -0.05 -11.81 1.26
+  rotation 0 0 1 1.5708
+  name "g7_p4"
+  controller "my_pedestrain_controller"
+  controllerArgs [
+    "--speed=1.5"
+  ]
+  shirtColor 1 0.4 0
+  bodySlot [
+    Receiver {
+      channel 7
+      allowedChannels [
+        7
+      ]
+    }
+  ]
+}
+DEF g8_p1 Pedestrian {
+  translation -0.0899922 -11.86 1.26
+  rotation 0 0 1 1.5708
+  name "g8_p1"
+  controller "my_pedestrain_controller"
+  controllerArgs [
+    "--speed=1.5"
+  ]
+  shirtColor 0 0 0
+  bodySlot [
+    Receiver {
+      channel 7
+      allowedChannels [
+        7
+      ]
+    }
+  ]
+}
+DEF g8_p2 Pedestrian {
+  translation 0.06 -11.85 1.26
+  rotation 0 0 1 1.5708
+  name "g8_p2"
+  controller "my_pedestrain_controller"
+  controllerArgs [
+    "--speed=1.5"
+  ]
+  shirtColor 0 0 0
+  bodySlot [
+    Receiver {
+      channel 7
+      allowedChannels [
+        7
+      ]
+    }
+  ]
+}
+DEF g8_p3 Pedestrian {
+  translation 0.050002 -11.84 1.26
+  rotation 0 0 1 1.5708
+  name "g8_p3"
+  controller "my_pedestrain_controller"
+  controllerArgs [
+    "--speed=1.5"
+  ]
+  shirtColor 0 0 0
+  bodySlot [
+    Receiver {
+      channel 7
+      allowedChannels [
+        7
+      ]
+    }
+  ]
+}
+DEF g8_p4 Pedestrian {
+  translation 0.0700007 -11.87 1.26
+  rotation 0 0 1 1.5708
+  name "g8_p4"
+  controller "my_pedestrain_controller"
+  controllerArgs [
+    "--speed=1.5"
+  ]
+  shirtColor 0 0 0
+  bodySlot [
+    Receiver {
+      channel 7
+      allowedChannels [
+        7
+      ]
+    }
   ]
 }

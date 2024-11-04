@@ -17,8 +17,20 @@ from controller import Supervisor
 
 import optparse
 import math
+import ast
+import numpy as np
+
+import sys
+import os
+libraries_path = os.path.abspath('../my_utils')
+sys.path.append(libraries_path)
+
+from classes_and_constans import DRONE_CHANNEL, WORLD_GENERATOR_CHANNEL, PEDESTRIAN_CHANNEL
 
 
+offsets = [np.array([0, 0]), np.array([0, -0.5]), np.array([-0.5, 0]), np.array([-0.5, -0.5])]
+sitting_z_position = 0.86
+standing_z_position = 1.26
 class Pedestrian(Supervisor):
     """Control a Pedestrian PROTO."""
 
@@ -63,11 +75,16 @@ class Pedestrian(Supervisor):
         self.root_translation_field = self.root_node_ref.getField("translation")
         self.root_rotation_field = self.root_node_ref.getField("rotation")
         self.reached_goal = False
+        self.p_name = self.root_node_ref.getField("name").getSFString()
+        self.reciever = self.getDevice("receiver")
+        self.reciever.enable(self.time_step)
+        self.in_group = False
+        self.is_sitting = False
         print("Pedestrian initialized")
 
     def run(self):
         """Set the Pedestrian pose and position."""
-        print("Running Pedestrian")
+        # print("Running Pedestrian")
         if not hasattr(self, 'waypoints') or len(self.waypoints) < 2:
             opt_parser = optparse.OptionParser()
             opt_parser.add_option("--trajectory", default="", help="Specify the trajectory in the format [x1 y1, x2 y2, ...]")
@@ -147,9 +164,9 @@ class Pedestrian(Supervisor):
                                self.waypoints[(i + 1) % self.number_of_waypoints][0] - self.waypoints[i][0])
             rotation = [0, 0, 1, angle]
 
-            print(f"Current Position: {self.root_translation_field.getSFVec3f()}")
-            print(f"Target Position: {root_translation}")
-            print(f"Waypoints: {self.waypoints}")
+            # print(f"Current Position: {self.root_translation_field.getSFVec3f()}")
+            # print(f"Target Position: {root_translation}")
+            # print(f"Waypoints: {self.waypoints}")
 
             self.root_translation_field.setSFVec3f(root_translation)
             self.root_rotation_field.setSFRotation(rotation)
@@ -157,7 +174,7 @@ class Pedestrian(Supervisor):
             # Check if the pedestrian has reached the target position
             if math.isclose(root_translation[0], self.waypoints[-1][0], abs_tol=0.1) and \
                math.isclose(root_translation[1], self.waypoints[-1][1], abs_tol=0.1):
-                print("Reached the target position.")
+                # print("Reached the target position.")
                 self.reached_goal = True
 
         self.reset_limb_configuration()
@@ -204,11 +221,54 @@ class Pedestrian(Supervisor):
         self.run()
         print("Finished run")
 
+    def listen_to_world(self):
+        """Listen to the world for new coordinates."""
+        max_itters = 10
+        while self.reciever.getQueueLength() > 0 and max_itters > 0:
+            max_itters -= 1
+            message = ast.literal_eval(self.reciever.getString())
+            if message not in [None, ""]:
+                if message[0] == WORLD_GENERATOR_CHANNEL and message[1] == self.p_name:
+                    x, y = message[-2], message[-1]
+                    self.go_to_coordinate(x, y)
+                    self.in_group = True
+                if message[0] == DRONE_CHANNEL and self.in_group:
+                    my_group_num = int(self.p_name[1])
+                    group_num = int(message[1])
+                    if my_group_num == group_num:
+                        if message[2] == "follow_me":
+                            if self.is_sitting:
+                                curent_position = self.root_translation_field.getSFVec3f()
+                                curent_position[2] = standing_z_position
+                                self.root_translation_field.setSFVec3f(curent_position)
+                                self.is_sitting = False
+                        
+                            p_index = int(self.p_name[-1]) - 1
+                            x, y = message[-2] + offsets[p_index][0], message[-1] + offsets[p_index][1]
+                            self.go_to_coordinate(x, y)
+                        if message[2] == "drop_group":
+                            table_name = message[-1]
+                            my_chair = table_name + f"_{int(self.p_name[-1])}"
+                            my_chair_node = self.getFromDef(my_chair)
+                            my_new_position = my_chair_node.getField("translation").getSFVec3f()
+                            my_new_position[2] = sitting_z_position
+                            my_new_rotation = my_chair_node.getField("rotation").getSFRotation()
+                            self.root_translation_field.setSFVec3f(my_new_position)
+                            self.root_rotation_field.setSFRotation(my_new_rotation)
+                            self.is_sitting = True
 
+
+                
+
+            self.reciever.nextPacket()
+     
 
 if __name__ == '__main__':
     print("Starting the Pedestrian controller")
     pedestrian = Pedestrian()
-    print(f"Current Position: {pedestrian.root_translation_field.getSFVec3f()}")
-    pedestrian.go_to_coordinate(2.0, 3.0)  # Example target coordinates
-    pedestrian.go_to_coordinate(-2, -3)  # Example target coordinates
+
+    # Main loop
+    while pedestrian.step(pedestrian.time_step) != -1:
+        pedestrian.listen_to_world()
+        
+    

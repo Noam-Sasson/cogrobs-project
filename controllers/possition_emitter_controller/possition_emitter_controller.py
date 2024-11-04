@@ -21,14 +21,16 @@ def run_robot(robot):
 
     # Get the emitter device
     emitter = robot.getDevice('emitter')
+    sended = False
 
-    while robot.step(timestep) != -1:
+    while robot.step(timestep) != -1 and not sended:
         position = gps.getValues()
         # Send possition message
         if position is not None:
             message = (name, position)
             emitter.setChannel(CPU_CHANNEL)
             emitter.send(str(message).encode('utf-8'))
+            sended = True
 
 
 if __name__ == "__main__":
