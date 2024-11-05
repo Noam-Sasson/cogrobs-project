@@ -30,6 +30,7 @@ import sys
 sys.path.append('../../../../controllers_shared/python_based')
 from pid_controller import pid_velocity_fixed_height_controller
 
+import ast
 
 FLYING_ATTITUDE = 1
 MAX_FORWARD_SPEED = 0.5
@@ -46,7 +47,8 @@ on_node = True
 on_track = False
 
 class HandleCommands:
-    def __init__(self, robot, gps, rec_channel=DRONE_CHANNEL):
+    def __init__(self, robot, rec_channel=DRONE_CHANNEL):
+        self.timestep = int(robot.getBasicTimeStep())
         self.robot = robot
         self.receiver = robot.getDevice("receiver")
         self.receiver.setChannel(rec_channel)
@@ -55,160 +57,111 @@ class HandleCommands:
         self.emitter.setChannel(CPU_CHANNEL)
         self.display = robot.getDevice("display")  # Get the display device
         self.group_picked = None
-        self.gps = gps
-    
-    def take_group_i(self, group_num):
-        """Set text on the display."""
-        self.display.setColor(0xFFFFFF)  # Set the text color to blue
-        height = self.display.getHeight()
-        width = self.display.getWidth()
-        self.display.fillRectangle(0, 0, width, height)  # Fill the background
-        self.display.setColor(0x0000FF)  # Set the text color to blue
-        self.display.drawText(f" Group {group_num}", 5, 5)  # Display the text
-        self.display.drawText(f"follow me!", 4, 25)  # Display the text
 
-        self.group_picked = group_num
-        messege = (DRONE_CHANNEL, group_num, "follow_me", self.gps.getValues()[0], self.gps.getValues()[1])
-        print(PEDESTRIAN_CHANNEL)
-        self.emitter.setChannel(PEDESTRIAN_CHANNEL)
-        self.emitter.send(str(messege).encode('utf-8'))
-        self.emitter.setChannel(CPU_CHANNEL)
+        ## Initialize motors
+        self.m1_motor = robot.getDevice("m1_motor")
+        self.m1_motor.setPosition(float('inf'))
+        self.m1_motor.setVelocity(-1)
+        self.m2_motor = robot.getDevice("m2_motor")
+        self.m2_motor.setPosition(float('inf'))
+        self.m2_motor.setVelocity(1)
+        self.m3_motor = robot.getDevice("m3_motor")
+        self.m3_motor.setPosition(float('inf'))
+        self.m3_motor.setVelocity(-1)
+        self.m4_motor = robot.getDevice("m4_motor")
+        self.m4_motor.setPosition(float('inf'))
+        self.m4_motor.setVelocity(1)
 
-    def send_follow_me_puls(self, group_num):
-        messege = (DRONE_CHANNEL, group_num, "follow_me", self.gps.getValues()[0], self.gps.getValues()[1])
-        self.emitter.setChannel(PEDESTRIAN_CHANNEL)
-        self.emitter.send(str(messege).encode('utf-8'))
-        self.emitter.setChannel(CPU_CHANNEL)
-    
-    def drop_group_i(self, group_num, table_num):
-        self.display.setColor(0xFFFFFF)  # Set the text color to blue
-        height = self.display.getHeight()
-        width = self.display.getWidth()
-        self.display.fillRectangle(0, 0, width, height)  # Fill the background
-        self.display.setColor(0x0000FF)  # Set the text color to blue
-        self.display.drawText(f" Group {group_num}", 5, 5)  # Display the text
-        self.display.drawText(f"this is", 10, 25)  # Display the text
-        self.display.drawText(f"your table!", 0, 45)  # Display the text
-        
-        message = (DRONE_CHANNEL, group_num, "drop_group", table_num)
-        self.emitter.setChannel(PEDESTRIAN_CHANNEL)
-        self.emitter.send(str(message).encode('utf-8'))
-        self.emitter.setChannel(CPU_CHANNEL)
+        ## Initialize Sensors
+        self.imu = robot.getDevice("inertial_unit")
+        self.imu.enable(self.timestep)
+        self.gps = robot.getDevice("gps")
+        self.gps.enable(self.timestep)
+        self.gyro = robot.getDevice("gyro")
+        self.gyro.enable(self.timestep)
+        self.camera = robot.getDevice("camera")
+        self.camera.enable(self.timestep)
+        self.range_front = robot.getDevice("range_front")
+        self.range_front.enable(self.timestep)
+        self.range_left = robot.getDevice("range_left")
+        self.range_left.enable(self.timestep)
+        self.range_back = robot.getDevice("range_back")
+        self.range_back.enable(self.timestep)
+        self.range_right = robot.getDevice("range_right")
+        self.range_right.enable(self.timestep)
 
-    def handle_pickup(self, group_num):
-        pass
+        ## Get keyboard
+        self.keyboard = Keyboard()
+        self.keyboard.enable(self.timestep)
 
-def run_robot(robot):
-    timestep = int(robot.getBasicTimeStep())
+        ## Initialize variables
+        self.past_x_global = 0
+        self.past_y_global = 0
 
-    ## Initialize motors
-    m1_motor = robot.getDevice("m1_motor")
-    m1_motor.setPosition(float('inf'))
-    m1_motor.setVelocity(-1)
-    m2_motor = robot.getDevice("m2_motor")
-    m2_motor.setPosition(float('inf'))
-    m2_motor.setVelocity(1)
-    m3_motor = robot.getDevice("m3_motor")
-    m3_motor.setPosition(float('inf'))
-    m3_motor.setVelocity(-1)
-    m4_motor = robot.getDevice("m4_motor")
-    m4_motor.setPosition(float('inf'))
-    m4_motor.setVelocity(1)
+        self.x_global = self.gps.getValues()[0]
+        self.y_global = self.gps.getValues()[1]
+        self.past_time = self.robot.getTime()
 
-    ## Initialize Sensors
-    imu = robot.getDevice("inertial_unit")
-    imu.enable(timestep)
-    gps = robot.getDevice("gps")
-    gps.enable(timestep)
-    gyro = robot.getDevice("gyro")
-    gyro.enable(timestep)
-    camera = robot.getDevice("camera")
-    camera.enable(timestep)
-    range_front = robot.getDevice("range_front")
-    range_front.enable(timestep)
-    range_left = robot.getDevice("range_left")
-    range_left.enable(timestep)
-    range_back = robot.getDevice("range_back")
-    range_back.enable(timestep)
-    range_right = robot.getDevice("range_right")
-    range_right.enable(timestep)
+        # Crazyflie velocity PID controller
+        self.PID_CF = pid_velocity_fixed_height_controller()
+        self.PID_update_last_time = robot.getTime()
+        self.sensor_read_last_time = robot.getTime()
 
-    ## Get keyboard
-    keyboard = Keyboard()
-    keyboard.enable(timestep)
+        self.receiver = self.robot.getDevice("receiver")
+        self.receiver.enable(self.timestep)
 
-    ## Initialize variables
-    past_x_global = 0
-    past_y_global = 0
-
-    x_global = gps.getValues()[0]
-    y_global = gps.getValues()[1]
-    past_time = robot.getTime()
-
-    # Crazyflie velocity PID controller
-    PID_CF = pid_velocity_fixed_height_controller()
-    PID_update_last_time = robot.getTime()
-    sensor_read_last_time = robot.getTime()
-
-    receiver = robot.getDevice("receiver")
-    receiver.enable(timestep)
-
-    emitter = robot.getDevice("emitter")
-    emitter.setChannel(DRONE_CHANNEL)
-
-    # Create HandleCommands instance
-    command_handler = HandleCommands(robot, gps)
-
-
-    def go_to_goal(x, y, z):
+        self.emitter = self.robot.getDevice("emitter")
+        self.emitter.setChannel(DRONE_CHANNEL)
+     
+    def go_to_goal(self, x, y, z):
         # print(f'going to {x}, {y}, {z}')
-        nonlocal x_goal, y_goal, altitude_goal
-        x_goal = x
-        y_goal = y
-        altitude_goal = z
-        execute_configuration(x_goal, y_goal, altitude_goal)
+        self.x_goal = x
+        self.y_goal = y
+        self.altitude_goal = z
+        self.execute_configuration(self.x_goal, self.y_goal, self.altitude_goal)
         # print(f'goal reached {x}, {y}, {z}')
     
-    def stay_in_position(seconds=5):
-        nonlocal x_goal, y_goal, altitude_goal
+    def stay_in_position(self, seconds=-1):
         # print(f'staying in position {x_goal}, {y_goal}, {altitude_goal}')
-        x_goal = gps.getValues()[0]
-        y_goal = gps.getValues()[1]
-        altitude_goal = gps.getValues()[2]
+        self.x_goal = self.gps.getValues()[0]
+        self.y_goal = self.gps.getValues()[1]
+        self.altitude_goal = MAX_ALTITUDE
         starting_time = robot.getTime()
-        while robot.getTime() - starting_time < 5:
-            execute_configuration(x_goal, y_goal, altitude_goal)
+        if seconds == -1:
+             while robot.getTime() - starting_time < 0.1:
+                self.execute_configuration(self.x_goal, self.y_goal, self.altitude_goal)
+        else:
+            while robot.getTime() - starting_time < 5:
+                self.execute_configuration(self.x_goal, self.y_goal, self.altitude_goal)
 
         # print('finnished staying in position')
 
-    def execute_configuration(x_goal, y_goal, altitude_goal):
-
-        nonlocal past_time, past_x_global, past_y_global, height_desired, x_global, y_global
-
+    def execute_configuration(self, x_goal, y_goal, altitude_goal):
         # Main loop executing the commands:
         forward_desired = 0
         sideways_desired = 0
         yaw_desired = 0
         height_diff_desired = 0
+        height_desired = altitude_goal
 
         pules_margin_time = 0
         reached_goal = False
-        while robot.step(timestep) != -1:
-            dt = robot.getTime() - past_time
+        while robot.step(self.timestep) != -1:
+            dt = robot.getTime() - self.past_time
             actual_state = {}
 
             ## Get sensor data
-            roll = imu.getRollPitchYaw()[0]
-            pitch = imu.getRollPitchYaw()[1]
-            yaw = imu.getRollPitchYaw()[2]
-            yaw_rate = gyro.getValues()[2]
-            altitude = gps.getValues()[2]
-            x_global = gps.getValues()[0]
-            y_global = gps.getValues()[1]
+            roll = self.imu.getRollPitchYaw()[0]
+            pitch = self.imu.getRollPitchYaw()[1]
+            yaw = self.imu.getRollPitchYaw()[2]
+            yaw_rate = self.gyro.getValues()[2]
+            self.altitude = self.gps.getValues()[2]
+            self.x_global = self.gps.getValues()[0]
+            self.y_global = self.gps.getValues()[1]
 
             # Calculate global velocities
-            v_x_global = (x_global - past_x_global) / dt
-            v_y_global = (y_global - past_y_global) / dt
+            v_x_global = (self.x_global - self.past_x_global) / dt
+            v_y_global = (self.y_global - self.past_y_global) / dt
 
             ## Get body fixed velocities
             cosyaw = cos(yaw)
@@ -217,7 +170,7 @@ def run_robot(robot):
             v_y = -v_x_global * sinyaw + v_y_global * cosyaw
 
             ## Initialize values
-            initial_state = {"pos": np.array([x_global, y_global, altitude]), "moment": np.array([v_x, v_y, yaw])}
+            initial_state = {"pos": np.array([self.x_global, self.y_global, self.altitude]), "moment": np.array([v_x, v_y, yaw])}
             desired_state = {"pos": np.array([x_goal, y_goal, altitude_goal]), "moment": np.array([0, 0, 0])}
 
             desired_direction = desired_state["pos"] - initial_state["pos"]
@@ -237,8 +190,8 @@ def run_robot(robot):
             # print(f"Desired position: {desired_state['pos']}")
             # # print(f"Current velocity: {initial_state['moment']}")
             # # print(f"Desired velocity: {desired_state['moment']}")
-            # # print("\n")
-            # # print(f"deseired_direction: {desired_direction}")
+            # # # print("\n")
+            # print(f"deseired_direction: {desired_direction}")
             # print(f"distance: {distance}")
 
             slowing_forward = False
@@ -263,9 +216,9 @@ def run_robot(robot):
                 elif yaw_desired - yaw < -0.1:
                     yaw_desired -= 1
 
-                if altitude_goal - altitude > 0.1:
+                if altitude_goal - self.altitude > 0.1:
                     height_diff_desired = 0.1
-                elif altitude_goal - altitude < -0.1 :
+                elif altitude_goal - self.altitude < -0.1 :
                     height_diff_desired = -0.1
 
                 forward_desired = np.sign(forward_desired)*min(MAX_FORWARD_SPEED, np.abs(forward_desired))
@@ -318,77 +271,137 @@ def run_robot(robot):
             ## cameraData = camera.getImage()
 
             ## PID velocity controller with fixed height
-            nonlocal PID_CF
-            motor_power = PID_CF.pid(dt, forward_desired, sideways_desired,
+            
+            motor_power = self.PID_CF.pid(dt, forward_desired, sideways_desired,
                                     yaw_desired, height_desired,
                                     roll, pitch, yaw_rate,
-                                    altitude, v_x, v_y)
+                                    self.altitude, v_x, v_y)
 
-            m1_motor.setVelocity(-motor_power[0])
-            m2_motor.setVelocity(motor_power[1])
-            m3_motor.setVelocity(-motor_power[2])
-            m4_motor.setVelocity(motor_power[3])
+            self.m1_motor.setVelocity(-motor_power[0])
+            self.m2_motor.setVelocity(motor_power[1])
+            self.m3_motor.setVelocity(-motor_power[2])
+            self.m4_motor.setVelocity(motor_power[3])
 
-            past_time = robot.getTime()
-            past_x_global = x_global
-            past_y_global = y_global
+            self.past_time = robot.getTime()
+            self.past_x_global = self.x_global
+            self.past_y_global = self.y_global
 
-            nonlocal command_handler
-
-            if command_handler.group_picked is not None and pules_margin_time > TIME_MARGIN:
-                command_handler.send_follow_me_puls(command_handler.group_picked)
+            if self.group_picked is not None and pules_margin_time > TIME_MARGIN:
+                self.send_follow_me_puls(self.group_picked)
                 pules_margin_time = 0
             else:
-                pules_margin_time += timestep
+                pules_margin_time += self.timestep
 
             if reached_goal:
                 return
 
-    def go_to(node_name):
-        print(f'Drone: going to {node_name}')
+    def go_to(self, node_name):
+        # print(f'Drone: going to {node_name}')
         node = graph.get_node(node_name)
-        go_to_goal(node.fisical_position[0], node.fisical_position[1], MAX_ALTITUDE)
+        self.go_to_goal(node.fisical_position[0], node.fisical_position[1], MAX_ALTITUDE)
+
+        self.emitter.setChannel(CPU_CHANNEL)
+        message = (DRONE_CHANNEL, "reached_node", node_name)
+        self.emitter.send(str(message).encode('utf-8'))
     
+    def take_group_i(self, group_num):
+        """Set text on the display."""
+        self.display.setColor(0xFFFFFF)  # Set the text color to blue
+        height = self.display.getHeight()
+        width = self.display.getWidth()
+        self.display.fillRectangle(0, 0, width, height)  # Fill the background
+        self.display.setColor(0x0000FF)  # Set the text color to blue
+        self.display.drawText(f" Group {group_num}", 5, 5)  # Display the text
+        self.display.drawText(f"follow me!", 4, 25)  # Display the text
+
+        self.group_picked = group_num
+        messege = (DRONE_CHANNEL, group_num, "follow_me", self.gps.getValues()[0], self.gps.getValues()[1])
+        # print(PEDESTRIAN_CHANNEL)
+        self.emitter.setChannel(PEDESTRIAN_CHANNEL)
+        self.emitter.send(str(messege).encode('utf-8'))
+        self.emitter.setChannel(CPU_CHANNEL)
+
+        messege = (CPU_CHANNEL, "group_picked", group_num)
+        self.emitter.setChannel(CPU_CHANNEL)
+
+    def send_follow_me_puls(self, group_num):
+        messege = (DRONE_CHANNEL, group_num, "follow_me", self.gps.getValues()[0], self.gps.getValues()[1])
+        self.emitter.setChannel(PEDESTRIAN_CHANNEL)
+        self.emitter.send(str(messege).encode('utf-8'))
+        self.emitter.setChannel(CPU_CHANNEL)
+    
+    def drop_group_i(self, group_num, table_num):
+        self.display.setColor(0xFFFFFF)  # Set the text color to blue
+        height = self.display.getHeight()
+        width = self.display.getWidth()
+        self.display.fillRectangle(0, 0, width, height)  # Fill the background
+        self.display.setColor(0x0000FF)  # Set the text color to blue
+        self.display.drawText(f" Group {group_num}", 5, 5)  # Display the text
+        self.display.drawText(f"this is", 10, 25)  # Display the text
+        self.display.drawText(f"your table!", 0, 45)  # Display the text
+        
+        message = (DRONE_CHANNEL, group_num, "drop_group", table_num)
+        self.emitter.setChannel(PEDESTRIAN_CHANNEL)
+        self.emitter.send(str(message).encode('utf-8'))
+        self.emitter.setChannel(CPU_CHANNEL)
+
+        message = (CPU_CHANNEL, "group_dropped", group_num, table_num)
+        self.emitter.setChannel(CPU_CHANNEL)
+
+    def lift_off(self):
+        print('Drone: lifiting off')
+        while robot.step(self.timestep) != -1 and self.gps.getValues()[2] is None:
+            pass
+
+        height_desired = self.gps.getValues()[2]
+        x_goal = self.gps.getValues()[0]
+        y_goal = self.gps.getValues()[1]
+        altitude_goal = MAX_ALTITUDE # Set your target altitude
+        self.go_to_goal(x_goal, y_goal, altitude_goal)
+
+    def listen_to_cpu(self):
+        if self.receiver.getQueueLength() > 0:
+            message = ast.literal_eval(self.receiver.getString())
+            if message[0] == CPU_CHANNEL:
+                if message[1] == "go_to":
+                    self.go_to(message[2])
+                elif message[1] == "take_group":
+                    self.take_group_i(message[2])
+                    print("Drone: take group")
+                elif message[1] == "drop_group":
+                    self.drop_group_i(message[2], message[3])
+                else:
+                    print("Unknown command")
+            
+            self.receiver.nextPacket()
+
+def run_robot(robot):
+    timestep = int(robot.getBasicTimeStep())
+
+    # Create HandleCommands instance
+    command_handler = HandleCommands(robot)
+
     global got_positions_from_cpu
 
     #  get positions from cpu
     while robot.step(timestep) != -1 and not got_positions_from_cpu:
         # Check for incoming packets
-        print(f"Queue length: {receiver.getQueueLength()}")
-        got_positions_from_cpu = get_positions_graph_from_cpu(receiver, emitter, graph, got_positions_from_cpu)
+        print(f"Queue length: {command_handler.receiver.getQueueLength()}")
+        got_positions_from_cpu = get_positions_graph_from_cpu(command_handler.receiver, command_handler.emitter, graph, got_positions_from_cpu)
 
         if got_positions_from_cpu:
             print("Got positions from CPU")
             got_positions_from_cpu = True
 
     # lifiting off
-    print('Drone: lifiting off')
-    while robot.step(timestep) != -1 and gps.getValues()[2] is None:
-        pass
+    command_handler.lift_off()
+    print("Drone Ready")
 
-    height_desired = gps.getValues()[2]
-    x_goal = gps.getValues()[0]
-    y_goal = gps.getValues()[1]
-    altitude_goal = MAX_ALTITUDE # Set your target altitude
-
-    go_to_goal(x_goal, y_goal, altitude_goal)
-
-    print('finnished lifiting off')
-
-    command_handler.take_group_i(1)
-    go_to('ml_1')
-    go_to('ml')
-    go_to('tbl_tl')
-    command_handler.drop_group_i(1,"tbl_tl")
-    stay_in_position(2)
-    command_handler.take_group_i(1)
-    go_to('ml')
-    go_to('ml_1')
-    go_to('tl_1')
-
-
+    # Main loop:
     while robot.step(timestep) != -1:
-        stay_in_position()
+        command_handler.stay_in_position()
+        command_handler.listen_to_cpu()
+        
 
 if __name__ == '__main__':
     robot = Robot()

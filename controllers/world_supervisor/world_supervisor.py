@@ -8,7 +8,7 @@ import random
 libraries_path = os.path.abspath('../my_utils')
 sys.path.append(libraries_path)
 
-from classes_and_constans import CPU_CHANNEL, WORLD_GENERATOR_CHANNEL, PEDESTRIAN_CHANNEL, DRONE_CHANNEL
+from classes_and_constans import CPU_CHANNEL, WORLD_GENERATOR_CHANNEL, PEDESTRIAN_CHANNEL, DRONE_CHANNEL, RATE_OF_ARRIVAL
 
 init_xyloc = np.array([-2.5, -6])
 offsets = [np.array([0, 0]), np.array([0, -0.5]), np.array([-0.5, 0]), np.array([-0.5, -0.5])]
@@ -32,6 +32,8 @@ class WorldGenerator(Supervisor):
         """Sample from an exponential distribution with the given rate."""
         return np.random.exponential(1/rate)
     
+    
+    
     def get_node_by_name(self, name):
         """Get a node by its DEF name."""
         return self.getFromDef(name)
@@ -53,15 +55,17 @@ class WorldGenerator(Supervisor):
                 node = self.get_node_by_name(pedestrian)
                 if node:
                     position = node.getField("translation").getSFVec3f()
-                    print(f"Node {pedestrian} position: {position}")
+                    # print(f"Node {pedestrian} position: {position}")
                 else:
                     print(f"Node {pedestrian} not found")
             # Sample the next event time
             self.next_group_time += self.sample_exponential(self.poisson_rate)
+
+            self.make_pedestrians_arrive(group, group_size)
+
             self.emitter.setChannel(CPU_CHANNEL)
             message = (WORLD_GENERATOR_CHANNEL, "group_arrived", group, group_size)
             self.emitter.send(str(message).encode('utf-8'))
-            self.make_pedestrians_arrive(group, group_size)
 
     def run(self):
         # Main loop:
@@ -83,9 +87,9 @@ class WorldGenerator(Supervisor):
         for pedestrian in GROUPS[group]["members"][:group_size]:
             ped_idx =  GROUPS[group]["members"].index(pedestrian)
             location = GROUPS[group]["locs_outside"][ped_idx]
-            message = (WORLD_GENERATOR_CHANNEL, pedestrian, "go_to", location[0], location[1])
-            self.emitter.send(str(message).encode('utf-8'))                   
-
+            message = (WORLD_GENERATOR_CHANNEL, pedestrian, "go_to", group_size, location[0], location[1])
+            self.emitter.send(str(message).encode('utf-8'))
+        
 if __name__ == "__main__":
     avrg_time_of_arrival = 0.1*60*1000 # 2 minutes
     generator = WorldGenerator(poisson_rate = 1/avrg_time_of_arrival)

@@ -25,18 +25,21 @@ import os
 libraries_path = os.path.abspath('../my_utils')
 sys.path.append(libraries_path)
 
-from classes_and_constans import DRONE_CHANNEL, WORLD_GENERATOR_CHANNEL, PEDESTRIAN_CHANNEL
+from classes_and_constans import DRONE_CHANNEL, WORLD_GENERATOR_CHANNEL, PEDESTRIAN_CHANNEL, FOOD_ITEMS, CPU_CHANNEL, EXPECTED_PONDER_TIME, WAITER_CHANNEL, RATE_OF_ARRIVAL, EXPECTED_EATING_TIME
 
 
 offsets = [np.array([0, 0]), np.array([0, -0.5]), np.array([-0.5, 0]), np.array([-0.5, -0.5])]
 sitting_z_position = 0.86
 standing_z_position = 1.26
+vannishing_point = np.array([0, -12, 1.26])
+vainnishing_rotaion = np.array([0, 0, 1, 0])
+
 class Pedestrian(Supervisor):
     """Control a Pedestrian PROTO."""
 
     def __init__(self):
         """Constructor: initialize constants."""
-        print("Initializing Pedestrian")
+        # print("Initializing Pedestrian")
         self.BODY_PARTS_NUMBER = 13
         self.WALK_SEQUENCES_NUMBER = 8
         self.ROOT_HEIGHT = 1.27
@@ -78,9 +81,13 @@ class Pedestrian(Supervisor):
         self.p_name = self.root_node_ref.getField("name").getSFString()
         self.reciever = self.getDevice("receiver")
         self.reciever.enable(self.time_step)
+        self.emitter = self.getDevice("emitter")
         self.in_group = False
         self.is_sitting = False
-        print("Pedestrian initialized")
+        self.group_size = 0
+        self.table_name = None
+        self.is_order_manager = False
+        # print("Pedestrian initialized")
 
     def run(self):
         """Set the Pedestrian pose and position."""
@@ -181,7 +188,7 @@ class Pedestrian(Supervisor):
 
     def reset_limb_configuration(self):
         """Reset the limb configuration to a default standing position."""
-        print("Resetting limb configuration to default standing position.")
+        # print("Resetting limb configuration to default standing position.")
         standing_angles = [0.0] * self.BODY_PARTS_NUMBER  # Default standing angles
         for i in range(self.BODY_PARTS_NUMBER):
             self.joints_position_field[i].setSFFloat(standing_angles[i])
@@ -192,7 +199,7 @@ class Pedestrian(Supervisor):
 
     def go_to_coordinate(self, x, y):
         """Set the target coordinates and update the trajectory."""
-        print(f"Setting target coordinates to ({x}, {y})")
+        # print(f"Setting target coordinates to ({x}, {y})")
 
         # Reset necessary parameters
         self.root_node_ref = self.getSelf()
@@ -206,7 +213,7 @@ class Pedestrian(Supervisor):
         # Set the waypoints
         self.waypoints = [[self.root_translation_field.getSFVec3f()[0], self.root_translation_field.getSFVec3f()[1]], [x, y]]
         self.number_of_waypoints = len(self.waypoints)
-        print(f"len(self.waypoints): {len(self.waypoints)}")
+        # print(f"len(self.waypoints): {len(self.waypoints)}")
 
         # Compute waypoints distance
         for i in range(0, self.number_of_waypoints):
@@ -217,9 +224,9 @@ class Pedestrian(Supervisor):
             else:
                 self.waypoints_distance.append(self.waypoints_distance[i - 1] + math.sqrt(x_diff * x_diff + y_diff * y_diff))
 
-        print("Starting run")
+        # print("Starting run")
         self.run()
-        print("Finished run")
+        # print("Finished run")
 
     def listen_to_world(self):
         """Listen to the world for new coordinates."""
@@ -231,21 +238,25 @@ class Pedestrian(Supervisor):
                 if message[0] == WORLD_GENERATOR_CHANNEL and message[1] == self.p_name:
                     x, y = message[-2], message[-1]
                     self.go_to_coordinate(x, y)
+                    self.group_size = message[-3]
                     self.in_group = True
+                    print(f"Pedestrian {self.p_name} is in group {message[-3]}")
+                
                 if message[0] == DRONE_CHANNEL and self.in_group:
                     my_group_num = int(self.p_name[1])
                     group_num = int(message[1])
                     if my_group_num == group_num:
                         if message[2] == "follow_me":
+                            curent_position = self.root_translation_field.getSFVec3f()
                             if self.is_sitting:
-                                curent_position = self.root_translation_field.getSFVec3f()
                                 curent_position[2] = standing_z_position
                                 self.root_translation_field.setSFVec3f(curent_position)
                                 self.is_sitting = False
-                        
+
                             p_index = int(self.p_name[-1]) - 1
                             x, y = message[-2] + offsets[p_index][0], message[-1] + offsets[p_index][1]
-                            self.go_to_coordinate(x, y)
+                            if (x - curent_position[0])**2 + (y - curent_position[1])**2 > 0.1:
+                                self.go_to_coordinate(x, y)
                         if message[2] == "drop_group":
                             table_name = message[-1]
                             my_chair = table_name + f"_{int(self.p_name[-1])}"
@@ -256,15 +267,96 @@ class Pedestrian(Supervisor):
                             self.root_translation_field.setSFVec3f(my_new_position)
                             self.root_rotation_field.setSFRotation(my_new_rotation)
                             self.is_sitting = True
+                            self.table_name = table_name
 
+                            if int(self.p_name[-1]) == self.group_size:
+                                self.is_order_manager = True
+                                self.ponder_and_call_waiter()
+                                
+                if message[0] == WAITER_CHANNEL and self.in_group and self.is_order_manager:
+                    my_group_num = int(self.p_name[1])
+                    group_num = int(message[1])
+                    if my_group_num == group_num:
+                        if message[2] == "make_order" and self.group_size == int(self.p_name[-1]):
+                            self.order_food()
+                        if message[2] == "order_delivered" and self.group_size  == int(self.p_name[-1]):
+                            self.eat()
 
-                
+                if message[0] == PEDESTRIAN_CHANNEL and self.in_group:
+                    if message[1] == "group_vanish" and int(message[-1]) == int(self.p_name[-1]):
+                        self.in_group = False
+                        self.reset_limb_configuration()
+                        curent_position = self.root_translation_field.getSFVec3f()
+                        curent_position[2] = standing_z_position
+                        self.root_translation_field.setSFVec3f(vannishing_point)
+                        self.root_rotation_field.setSFRotation(vainnishing_rotaion)
+                        self.is_sitting = False
 
+                        
+                            
             self.reciever.nextPacket()
-     
+
+    def ponder_and_call_waiter(self):
+        """Ponder and order for all pedestrians."""
+
+        print(f"Pedestrian {self.p_name} is pondering")
+        # Ponder
+        start_time = self.getTime()
+        end_time = self.sample_exponential(EXPECTED_PONDER_TIME)
+        print(f"Pedestrian {self.p_name} pondering for {end_time} ms")
+        while pedestrian.step(pedestrian.time_step) != -1 and self.getTime() - start_time < end_time:
+            print(self.getTime() - start_time)
+            pass
+        
+        print("sending for waiter")
+        self.emitter.setChannel(CPU_CHANNEL)
+        send_message = (PEDESTRIAN_CHANNEL, "ready_to_order", int(self.p_name[1]), self.table_name)
+        self.emitter.send(str(send_message).encode('utf-8'))
+
+    def order_food(self):
+        # generate order
+        dishes = list(FOOD_ITEMS.keys())
+        dishes_chosen = np.random.choice(dishes, self.group_size, replace=False)
+        self.emitter.setChannel(WAITER_CHANNEL)
+        message = [PEDESTRIAN_CHANNEL]
+        for dish in dishes_chosen:
+            message.append(dish)
+        
+        message = tuple(message)
+        self.emitter.send(str(message).encode('utf-8'))
+        self.emitter.setChannel(CPU_CHANNEL)
+        print(f"Pedestrian {self.p_name} ordered {dishes_chosen}")
+
+    def eat(self):
+        start_time = self.getTime()
+        end_time = self.sample_exponential(EXPECTED_EATING_TIME)
+        print(f"Pedestrian {self.p_name} eating for {end_time} ms")
+        while pedestrian.step(pedestrian.time_step) != -1 and self.getTime() - start_time < end_time:
+            pass
+
+        # send message to CPU
+        self.emitter.setChannel(CPU_CHANNEL)
+        message = (CPU_CHANNEL, "finish_eating", int(self.p_name[-1]))
+        self.emitter.send(str(message).encode('utf-8'))
+
+        # make group vanish
+        self.emitter.setChannel(PEDESTRIAN_CHANNEL)
+        message = (PEDESTRIAN_CHANNEL, "group_vanish", int(self.p_name[-1]))
+        self.emitter.send(str(message).encode('utf-8'))
+        self.in_group = False
+        self.reset_limb_configuration()
+        self.root_translation_field.setSFVec3f(vannishing_point)
+        self.root_rotation_field.setSFRotation(vainnishing_rotaion)
+        self.is_sitting = False
+        
+
+
+    
+    def sample_exponential(self, rate):
+        """Sample from an exponential distribution with the given rate."""
+        return np.random.exponential(1/rate)
 
 if __name__ == '__main__':
-    print("Starting the Pedestrian controller")
     pedestrian = Pedestrian()
 
     # Main loop

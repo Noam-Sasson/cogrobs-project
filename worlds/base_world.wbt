@@ -16,8 +16,8 @@ EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/project
 WorldInfo {
 }
 Viewpoint {
-  orientation 0.4426122700497364 -0.007745023672707166 -0.896679649044032 3.172964677936597
-  position 3.0824139059483646 -3.493539018069865 8.674783391835675
+  orientation 0.4238386569458237 0.06002578525497911 -0.9037464788218449 2.8869856151503885
+  position 3.7500770384474293 -1.2661437114649507 11.312238692684922
   follow "inside"
 }
 TexturedBackground {
@@ -708,7 +708,7 @@ LineTrack {
   color 0 0 1
 }
 Robot {
-  translation -0.19570973207442655 -1.429288744713766 0.6954364484432901
+  translation -4.55256 2.56615 0.714401
   rotation 0.009806858346296559 0.0012876499600153564 -0.9999510825470195 1.5228682763750367
   children [
     GPS {
@@ -736,7 +736,7 @@ Robot {
       ]
       channel 1
       allowedChannels [
-        1
+        7, 1
       ]
     }
     Receiver {
@@ -772,13 +772,13 @@ Robot {
       name "color_sensor"
     }
     DistanceSensor {
-      translation 0.09 0.2 -0.67
+      translation 0.09 0.2 -0.66
       rotation 0 1 0 1.57
       name "ir_w_1"
       type "infra-red"
     }
     DistanceSensor {
-      translation -0.09 0.2 -0.67
+      translation -0.09 0.2 -0.66
       rotation 0 1 0 1.57
       name "ir_w_2"
       type "infra-red"
@@ -1009,7 +1009,7 @@ Robot {
           name "antena"
         }
       ]
-      channel 5
+      channel 3
       allowedChannels [
         5, 4, 3, 2
       ]
@@ -1470,7 +1470,7 @@ Robot {
 Robot {
   children [
     Emitter {
-      channel 7
+      channel 1
     }
   ]
   name "world_generator"
@@ -1537,6 +1537,12 @@ DEF g1_p1 Pedestrian {
     "--speed=1.5"
   ]
   bodySlot [
+    Emitter {
+      channel 1
+      allowedChannels [
+        7, 3, 1
+      ]
+    }
     Receiver {
       channel 7
       allowedChannels [
@@ -1554,6 +1560,12 @@ DEF g1_p2 Pedestrian {
     "--speed=1.5"
   ]
   bodySlot [
+    Emitter {
+      channel 1
+      allowedChannels [
+        7, 3, 1
+      ]
+    }
     Receiver {
       channel 7
       allowedChannels [
@@ -1571,6 +1583,12 @@ DEF g1_p3 Pedestrian {
     "--speed=1.5"
   ]
   bodySlot [
+    Emitter {
+      channel 1
+      allowedChannels [
+        7, 3, 1
+      ]
+    }
     Receiver {
       channel 7
       allowedChannels [
@@ -1588,6 +1606,12 @@ DEF g1_p4 Pedestrian {
     "--speed=1.5"
   ]
   bodySlot [
+    Emitter {
+      channel 1
+      allowedChannels [
+        7, 3, 1
+      ]
+    }
     Receiver {
       channel 7
       allowedChannels [
@@ -1606,6 +1630,12 @@ DEF g2_p1 Pedestrian {
   ]
   shirtColor 1 0 0
   bodySlot [
+    Emitter {
+      channel 1
+      allowedChannels [
+        7, 3, 1
+      ]
+    }
     Receiver {
       channel 7
       allowedChannels [
@@ -1624,6 +1654,12 @@ DEF g2_p2 Pedestrian {
   ]
   shirtColor 1 0 0
   bodySlot [
+    Emitter {
+      channel 1
+      allowedChannels [
+        7, 3, 1
+      ]
+    }
     Receiver {
       channel 7
       allowedChannels [
@@ -1642,6 +1678,12 @@ DEF g2_p3 Pedestrian {
   ]
   shirtColor 1 0 0
   bodySlot [
+    Emitter {
+      channel 1
+      allowedChannels [
+        7, 3, 1
+      ]
+    }
     Receiver {
       channel 7
       allowedChannels [
@@ -1660,6 +1702,12 @@ DEF g2_p4 Pedestrian {
   ]
   shirtColor 1 0 0
   bodySlot [
+    Emitter {
+      channel 1
+      allowedChannels [
+        7, 3, 1
+      ]
+    }
     Receiver {
       channel 7
       allowedChannels [
@@ -1678,6 +1726,12 @@ DEF g3_p1 Pedestrian {
   ]
   shirtColor 0 0 1
   bodySlot [
+    Emitter {
+      channel 1
+      allowedChannels [
+        7, 3, 1
+      ]
+    }
     Receiver {
       channel 7
       allowedChannels [
@@ -1696,6 +1750,12 @@ DEF g3_p2 Pedestrian {
   ]
   shirtColor 0 0 1
   bodySlot [
+    Emitter {
+      channel 1
+      allowedChannels [
+        7, 3, 1
+      ]
+    }
     Receiver {
       channel 7
       allowedChannels [
@@ -1705,7 +1765,7 @@ DEF g3_p2 Pedestrian {
   ]
 }
 DEF g3_p3 Pedestrian {
-  translation 0.0100031 -11.75 1.26
+  translation 0 -12 1.26
   rotation 0 0 1 1.5708
   name "g3_p3"
   controller "my_pedestrain_controller"
@@ -1714,6 +1774,12 @@ DEF g3_p3 Pedestrian {
   ]
   shirtColor 0 0 1
   bodySlot [
+    Emitter {
+      channel 1
+      allowedChannels [
+        7, 3, 1
+      ]
+    }
     Receiver {
       channel 7
       allowedChannels [
@@ -1732,6 +1798,12 @@ DEF g3_p4 Pedestrian {
   ]
   shirtColor 0 0 1
   bodySlot [
+    Emitter {
+      channel 1
+      allowedChannels [
+        7, 3, 1
+      ]
+    }
     Receiver {
       channel 7
       allowedChannels [
@@ -1750,6 +1822,12 @@ DEF g4_p1 Pedestrian {
   ]
   shirtColor 1 0 1
   bodySlot [
+    Emitter {
+      channel 1
+      allowedChannels [
+        7, 3, 1
+      ]
+    }
     Receiver {
       channel 7
       allowedChannels [
@@ -1768,6 +1846,12 @@ DEF g4_p2 Pedestrian {
   ]
   shirtColor 1 0 1
   bodySlot [
+    Emitter {
+      channel 1
+      allowedChannels [
+        7, 3, 1
+      ]
+    }
     Receiver {
       channel 7
       allowedChannels [
@@ -1786,6 +1870,12 @@ DEF g4_p3 Pedestrian {
   ]
   shirtColor 1 0 1
   bodySlot [
+    Emitter {
+      channel 1
+      allowedChannels [
+        7, 3, 1
+      ]
+    }
     Receiver {
       channel 7
       allowedChannels [
@@ -1804,6 +1894,12 @@ DEF g4_p4 Pedestrian {
   ]
   shirtColor 1 0 1
   bodySlot [
+    Emitter {
+      channel 1
+      allowedChannels [
+        7, 3, 1
+      ]
+    }
     Receiver {
       channel 7
       allowedChannels [
@@ -1822,6 +1918,12 @@ DEF g5_p1 Pedestrian {
   ]
   shirtColor 1 1 0
   bodySlot [
+    Emitter {
+      channel 1
+      allowedChannels [
+        7, 3, 1
+      ]
+    }
     Receiver {
       channel 7
       allowedChannels [
@@ -1840,6 +1942,12 @@ DEF g5_p2 Pedestrian {
   ]
   shirtColor 1 1 0
   bodySlot [
+    Emitter {
+      channel 1
+      allowedChannels [
+        7, 3, 1
+      ]
+    }
     Receiver {
       channel 7
       allowedChannels [
@@ -1858,6 +1966,12 @@ DEF g5_p3 Pedestrian {
   ]
   shirtColor 1 1 0
   bodySlot [
+    Emitter {
+      channel 1
+      allowedChannels [
+        7, 3, 1
+      ]
+    }
     Receiver {
       channel 7
       allowedChannels [
@@ -1876,6 +1990,12 @@ DEF g5_p4 Pedestrian {
   ]
   shirtColor 1 1 0
   bodySlot [
+    Emitter {
+      channel 1
+      allowedChannels [
+        7, 3, 1
+      ]
+    }
     Receiver {
       channel 7
       allowedChannels [
@@ -1894,6 +2014,12 @@ DEF g6_p1 Pedestrian {
   ]
   shirtColor 0 1 1
   bodySlot [
+    Emitter {
+      channel 1
+      allowedChannels [
+        7, 3, 1
+      ]
+    }
     Receiver {
       channel 7
       allowedChannels [
@@ -1912,6 +2038,12 @@ DEF g6_p2 Pedestrian {
   ]
   shirtColor 0 1 1
   bodySlot [
+    Emitter {
+      channel 1
+      allowedChannels [
+        7, 3, 1
+      ]
+    }
     Receiver {
       channel 7
       allowedChannels [
@@ -1930,6 +2062,12 @@ DEF g6_p3 Pedestrian {
   ]
   shirtColor 0 1 1
   bodySlot [
+    Emitter {
+      channel 1
+      allowedChannels [
+        7, 3, 1
+      ]
+    }
     Receiver {
       channel 7
       allowedChannels [
@@ -1948,6 +2086,12 @@ DEF g6_p4 Pedestrian {
   ]
   shirtColor 0 1 1
   bodySlot [
+    Emitter {
+      channel 1
+      allowedChannels [
+        7, 3, 1
+      ]
+    }
     Receiver {
       channel 7
       allowedChannels [
@@ -1966,6 +2110,12 @@ DEF g7_p1 Pedestrian {
   ]
   shirtColor 1 0.4 0
   bodySlot [
+    Emitter {
+      channel 1
+      allowedChannels [
+        7, 3, 1
+      ]
+    }
     Receiver {
       channel 7
       allowedChannels [
@@ -1984,6 +2134,12 @@ DEF g7_p2 Pedestrian {
   ]
   shirtColor 1 0.4 0
   bodySlot [
+    Emitter {
+      channel 1
+      allowedChannels [
+        7, 3, 1
+      ]
+    }
     Receiver {
       channel 7
       allowedChannels [
@@ -2002,6 +2158,12 @@ DEF g7_p3 Pedestrian {
   ]
   shirtColor 1 0.4 0
   bodySlot [
+    Emitter {
+      channel 1
+      allowedChannels [
+        7, 3, 1
+      ]
+    }
     Receiver {
       channel 7
       allowedChannels [
@@ -2020,6 +2182,12 @@ DEF g7_p4 Pedestrian {
   ]
   shirtColor 1 0.4 0
   bodySlot [
+    Emitter {
+      channel 1
+      allowedChannels [
+        7, 3, 1
+      ]
+    }
     Receiver {
       channel 7
       allowedChannels [
@@ -2038,6 +2206,12 @@ DEF g8_p1 Pedestrian {
   ]
   shirtColor 0 0 0
   bodySlot [
+    Emitter {
+      channel 1
+      allowedChannels [
+        7, 3, 1
+      ]
+    }
     Receiver {
       channel 7
       allowedChannels [
@@ -2056,6 +2230,12 @@ DEF g8_p2 Pedestrian {
   ]
   shirtColor 0 0 0
   bodySlot [
+    Emitter {
+      channel 1
+      allowedChannels [
+        7, 3, 1
+      ]
+    }
     Receiver {
       channel 7
       allowedChannels [
@@ -2074,6 +2254,12 @@ DEF g8_p3 Pedestrian {
   ]
   shirtColor 0 0 0
   bodySlot [
+    Emitter {
+      channel 1
+      allowedChannels [
+        7, 3, 1
+      ]
+    }
     Receiver {
       channel 7
       allowedChannels [
@@ -2092,6 +2278,12 @@ DEF g8_p4 Pedestrian {
   ]
   shirtColor 0 0 0
   bodySlot [
+    Emitter {
+      channel 1
+      allowedChannels [
+        7, 3, 1
+      ]
+    }
     Receiver {
       channel 7
       allowedChannels [

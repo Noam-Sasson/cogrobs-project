@@ -28,7 +28,7 @@ def get_positions_graph_from_cpu(receiver, emitter, graph, got_positions = False
         print("All nodes position received")
         got_positions = True
         # send verification to cpu
-        message = emitter.getChannel()
+        message = receiver.getChannel()
         emitter.setChannel(CPU_CHANNEL)
         emitter.send(str(message).encode('utf-8'))
     else:
