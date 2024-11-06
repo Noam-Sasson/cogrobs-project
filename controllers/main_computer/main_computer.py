@@ -18,7 +18,7 @@ import ast
 from collections.abc import Sequence, Mapping
 
 graph = get_graph()
-entities_channels = [DRONE_CHANNEL, WAITER_CHANNEL]
+entities_channels = [DRONE_CHANNEL, WAITER_CHANNEL, CLEANER_CHANNEL]
 
 got_nodes_position = False
 sent_possitions_to_entities = False
@@ -106,6 +106,9 @@ class droneCommnads:
         print(f"CPU: Sent pick_up_customer_group command to drone")
 
     def drop_off_customer_group(self, group_num, table):
+        if self.world_state.tables_states[table] != self.world_state.CLEAR:
+            print(f"CPU: Table {table} is not clear")
+            return
         message = (CPU_CHANNEL, "drop_group", group_num, table)
         self.emitter.setChannel(self.channel)
         self.emitter.send(str(message).encode('utf-8'))
@@ -168,13 +171,27 @@ class cleanerCommnads:
         self.receiver = robot.getDevice('receiver')
         self.receiver.enable(timestep)
         self.main_computer = robot
+        self.current_position = world_state.cleaner["position"]
         self.world_state = world_state
     
     def clean_table(self, table):
-        pass
+        if self.world_state.cleaner["position"] != table:
+            print(f"CPU: Cleaner is not at table {table}")
+            return
+        if self.world_state.tables_states[table] != self.world_state.NEED_CLEANING:
+            print(f"CPU: Table {table} is not dirty")
+            return
+        message = (CPU_CHANNEL, "clean_table", table)
+        self.emitter.setChannel(self.channel)
+        self.emitter.send(str(message).encode('utf-8'))
+        print(f"CPU: Sent clean_table command to cleaner")
 
-    def go_to(self, position):
-        pass
+    def go_to(self, node_to):
+        message = (CPU_CHANNEL,"go_to", self.current_position , node_to)
+        self.current_position = node_to
+        self.emitter.setChannel(self.channel)
+        self.emitter.send(str(message).encode('utf-8'))
+        print(f"CPU: Sent go_to command to cleaner")
 
 class worldGeneratorcommnads:
     def __init__(self, robot, channel, timestep, world_state):
@@ -249,7 +266,10 @@ class worldState:
                         group = message[2]
                         table = self.groups_to_tables[group]
                         self.tables_states[table] = self.NEED_CLEANING
+                        self.groups_states[group] = self.GROUP_OUTSIDE
+                        self.total_profit += sum([self.FOOD_ITEMS[f] for f in self.orders[group]])
                         print(f"CPU: Group {group} finished eating at table {table}")
+                        print(f"CPU: Total profit: {self.total_profit}")
 
                 if message[0] == DRONE_CHANNEL:
                     if message[1] == "reached_node":
@@ -288,7 +308,17 @@ class worldState:
                         group = message[2]
                         table = self.groups_to_tables[group]
                         self.tables_states[table] = self.EATING
-                                             
+
+                if message[0] == CLEANER_CHANNEL:
+                    if message[1] == "reached_node":
+                        node = message[2]
+                        self.cleaner["position"] = node
+                        print(f"CPU: Cleaner reached node {node}")
+                    if message[1] == "table_cleaned":
+                        table = message[2]
+                        self.tables_states[table] = self.CLEAR
+                        print(f"CPU: Table {table} cleaned")                         
+            
             receiver.nextPacket()
 
 def run_robot(robot):
@@ -303,6 +333,7 @@ def run_robot(robot):
 
     world_state.drone["position"] = "tl_1"
     world_state.waiter["position"] = "k"
+    world_state.cleaner["position"] = "mr"
 
     drone_command_handler = droneCommnads(robot, DRONE_CHANNEL, timestep, world_state)
     waiter_command_handler = waiterCommnads(robot, WAITER_CHANNEL, timestep, world_state)
@@ -371,6 +402,21 @@ def run_robot(robot):
         world_state.listen_to_entities(receiver)
 
     waiter_command_handler.deliver_food(1)
+    waiter_command_handler.go_to("ml")
+    waiter_command_handler.go_to("ml_1")
+    
+    while robot.step(timestep) != -1 and world_state.waiter["position"] != "ml_1":
+        world_state.listen_to_entities(receiver)
+
+    cleaner_command_handler.go_to("mr_1")
+    cleaner_command_handler.go_to("ml_2")
+    cleaner_command_handler.go_to("ml")
+    cleaner_command_handler.go_to("tbl_bl")
+    cleaner_command_handler.clean_table("tbl_bl")
+
+    while robot.step(timestep) != -1 and world_state.tables_states["tbl_bl"] != world_state.CLEAR:
+        world_state.listen_to_entities(receiver)
+
 
 
     # make full circle with waiter

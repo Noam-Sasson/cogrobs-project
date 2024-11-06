@@ -11,7 +11,7 @@ sys.path.append(libraries_path)
 
 from controller import Robot, Camera, Receiver
 import math
-from classes_and_constans import RED, GREEN, BLUE, ORANGE, NOCOLOR, WAITER_CHANNEL, CPU_CHANNEL, PEDESTRIAN_CHANNEL
+from classes_and_constans import RED, GREEN, BLUE, ORANGE, NOCOLOR, CLEANER_CHANNEL, CPU_CHANNEL, PEDESTRIAN_CHANNEL
 from classes_and_constans import Location, Edge, GraphNode, Entity, Graph
 from classes_and_constans import get_graph
 from functions import get_positions_graph_from_cpu
@@ -314,61 +314,31 @@ class HandeCommands:
         # print("Reached other node")
         self.dont_move()
         self.emitter.setChannel(CPU_CHANNEL)
-        message = (WAITER_CHANNEL, "reached_node", end_node.name)
+        message = (CLEANER_CHANNEL, "reached_node", end_node.name)
+        print("Cleaner reached node: ", message)
         self.emitter.send(str(message).encode('utf-8'))
 
     def dont_move(self):
         self.left_motor.setVelocity(0)
         self.right_motor.setVelocity(0)
 
-    def take_order(self, group_number):
-        self.emitter.setChannel(PEDESTRIAN_CHANNEL)
-        message = (WAITER_CHANNEL, group_number, "make_order")
-        print("Waiter: " + str(message))
-        self.emitter.send(str(message).encode('utf-8'))
-        while self.robot.step(self.timestep) != -1:
-            if self.receiver.getQueueLength() > 0:
-                message = ast.literal_eval(self.receiver.getString())
-                if message[0] == PEDESTRIAN_CHANNEL:
-                    self.emitter.setChannel(CPU_CHANNEL)
-                    message = tuple([WAITER_CHANNEL, "order_taken", group_number] + list(message[1:]))
-                    print(message)
-                    self.emitter.send(str(message).encode('utf-8'))
-                    break
-                self.receiver.nextPacket()
-
-        print("Waiter: Order taken")
-                
-    def pick_up_order(self, group_number):
-        self.emitter.setChannel(CPU_CHANNEL)
-        message = (WAITER_CHANNEL, "picked_up_order", group_number)
-        self.emitter.send(str(message).encode('utf-8'))
-
-    def deliver_order(self, group_number):
-        self.emitter.setChannel(CPU_CHANNEL)
-        message = (WAITER_CHANNEL, "order_delivered", group_number)
-        self.emitter.send(str(message).encode('utf-8'))
-
-        self.emitter.setChannel(PEDESTRIAN_CHANNEL)
-        message = (WAITER_CHANNEL, group_number,"order_delivered")
-        self.emitter.send(str(message).encode('utf-8'))
-     
     def listen_to_cpu(self):
         if self.receiver.getQueueLength() > 0:
             message = ast.literal_eval(self.receiver.getString())
             if message[0] == CPU_CHANNEL:
-                if message[1] == "take_order":
-                    self.take_order(message[2])
-                elif message[1] == "pick_up_order":
-                    self.pick_up_order(message[2])
-                elif message[1] == "deliver_order":
-                    self.deliver_order(message[2])
+                if message[1] == "clean_table":
+                    self.clean_table(message[2])
                 elif message[1] == "go_to":
                     print(message)
                     self.go_from_node_to_node(message[2], message[3])
             
             self.receiver.nextPacket()
-        
+
+    def clean_table(self, table):
+        self.emitter.setChannel(CPU_CHANNEL)
+        message = (CLEANER_CHANNEL, "table_cleaned", table)
+        self.emitter.send(str(message).encode('utf-8'))
+
 def run_robot(robot):
     command_handler = HandeCommands(robot)
     command_handler.dont_move()
@@ -380,7 +350,7 @@ def run_robot(robot):
 
         if not got_positions_from_cpu:
             got_positions_from_cpu = get_positions_graph_from_cpu(command_handler.receiver, command_handler.emitter, graph, got_positions_from_cpu)
-            print("Waiter Ready")
+            print("Cleaner Ready")
 
         if got_positions_from_cpu:
             command_handler.listen_to_cpu()

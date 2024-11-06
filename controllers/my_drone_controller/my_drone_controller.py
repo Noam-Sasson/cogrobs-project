@@ -339,6 +339,7 @@ class HandleCommands:
         self.display.drawText(f" Group {group_num}", 5, 5)  # Display the text
         self.display.drawText(f"this is", 10, 25)  # Display the text
         self.display.drawText(f"your table!", 0, 45)  # Display the text
+        self.group_picked = None
         
         message = (DRONE_CHANNEL, group_num, "drop_group", table_num)
         self.emitter.setChannel(PEDESTRIAN_CHANNEL)
