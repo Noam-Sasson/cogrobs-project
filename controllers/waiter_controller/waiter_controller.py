@@ -179,6 +179,7 @@ class HandeCommands:
         turn_completed = False
 
         while robot.step(timestep) != -1 and not turn_completed:
+            print("Turning")
             current_time = robot.getTime()
 
             if current_time < rot_end_time:
@@ -229,7 +230,7 @@ class HandeCommands:
         while currnet_color == NOCOLOR:
             self.go_forward(self.robot, 0.05, self.left_motor, self.right_motor, self.max_speed, self.wheel_radius, self.distance_between_wheels, self.timestep)
             currnet_color = self.get_color_from_camera(self.camera.getImage(), self.camera.getWidth(), self.camera.getHeight())
-            # print("Current color: ", currnet_color)
+            print("Current color: ", currnet_color)
 
         rotations = [FRONT, SIDE, BACK]
 
@@ -258,23 +259,33 @@ class HandeCommands:
         # print("Angle: ", angle)
         closest_angle = min([rot for rot in rotations], key=lambda x: abs(x - angle))
 
+        # find direction of left/right rotation
+        angle_sign = 1
+        if np.cross(robot_direction, goal_direction) >= 0:
+            angle_sign = -1
+        
         if len(start_node.get_neighbours()) == 2 and closest_angle == SIDE:
             closest_angle = FRONT
         if len(start_node.get_neighbours()) == 3 and closest_angle == SIDE and len(start_node.name) >= 2 and len(end_node.name) >= 2 and start_node.name[:2] == end_node.name[:2]:
             closest_angle = FRONT
+        
+        closest_angle = closest_angle * angle_sign
 
-        # find direction of left/right rotation
-        if np.cross(robot_direction, goal_direction) >= 0:
-            closest_angle = -closest_angle
-        # print("Closest Angle: ", closest_angle)
-        if angle > 0.1:
+        if len(start_node.get_neighbours()) == 3 and closest_angle == FRONT:
+            if start_node.name == "bl_2":
+                closest_angle = -SIDE
+            if start_node.name == "br_1":
+                closest_angle = SIDE
+
+        print("Closest Angle: ", closest_angle)
+        if np.abs(closest_angle) > 0.1:
             self.make_turn(self.robot, closest_angle, self.left_motor, self.right_motor, self.max_speed, self.wheel_radius, self.distance_between_wheels, self.timestep)
-        self.go_forward(self.robot, 0.2, self.left_motor, self.right_motor, self.max_speed, self.wheel_radius, self.distance_between_wheels, self.timestep)
+        self.go_forward(self.robot, 0.1, self.left_motor, self.right_motor, self.max_speed, self.wheel_radius, self.distance_between_wheels, self.timestep)
         reached_other_node = False
         while self.robot.step(self.timestep) != -1 and not reached_other_node:
             color = self.get_color_from_camera(self.camera.getImage(), self.camera.getWidth(), self.camera.getHeight())
 
-            # print("Color: ", color)
+            print("Color: ", color)
             if color!= currnet_color and color != NOCOLOR:
                 reached_other_node = True
                 left_speed = 0
@@ -283,14 +294,14 @@ class HandeCommands:
                 left_ir_value = self.left_ir.getValue()
                 right_ir_value = self.right_ir.getValue()
 
-                # print("Left IR: ", left_ir_value, "Right IR: ", right_ir_value)
+                print("Left IR: ", left_ir_value, "Right IR: ", right_ir_value)
 
-                if (left_ir_value > right_ir_value) and (800 < left_ir_value <= 1000):
-                    # print("turn right")
+                if (left_ir_value > right_ir_value) and (900 < left_ir_value <= 1000):
+                    print("turn right")
                     left_speed = -self.max_speed
                     right_speed = self.max_speed
-                elif (right_ir_value > left_ir_value) and (800 < right_ir_value <= 1000):
-                    # print("turn left")
+                elif (right_ir_value > left_ir_value) and (900 < right_ir_value <= 1000):
+                    print("turn left")
                     left_speed = self.max_speed
                     right_speed = -self.max_speed
                 else:
@@ -315,17 +326,17 @@ class HandeCommands:
         message = (WAITER_CHANNEL, group_number, "make_order")
         print("Waiter: " + str(message))
         self.emitter.send(str(message).encode('utf-8'))
-        
         while self.robot.step(self.timestep) != -1:
             if self.receiver.getQueueLength() > 0:
                 message = ast.literal_eval(self.receiver.getString())
                 if message[0] == PEDESTRIAN_CHANNEL:
+                    self.emitter.setChannel(CPU_CHANNEL)
                     message = tuple([WAITER_CHANNEL, "order_taken", group_number] + list(message[1:]))
+                    print(message)
                     self.emitter.send(str(message).encode('utf-8'))
                     break
+                self.receiver.nextPacket()
 
-        self.emitter.setChannel(CPU_CHANNEL)
-        
         print("Waiter: Order taken")
                 
     def pick_up_order(self, group_number):

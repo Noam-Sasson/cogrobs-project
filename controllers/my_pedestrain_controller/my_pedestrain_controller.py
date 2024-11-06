@@ -31,8 +31,8 @@ from classes_and_constans import DRONE_CHANNEL, WORLD_GENERATOR_CHANNEL, PEDESTR
 offsets = [np.array([0, 0]), np.array([0, -0.5]), np.array([-0.5, 0]), np.array([-0.5, -0.5])]
 sitting_z_position = 0.86
 standing_z_position = 1.26
-vannishing_point = np.array([0, -12, 1.26])
-vainnishing_rotaion = np.array([0, 0, 1, 0])
+vannishing_point = [0, -12, 1.26]
+vainnishing_rotaion = [0, 0, 1, 0]
 
 class Pedestrian(Supervisor):
     """Control a Pedestrian PROTO."""
@@ -283,7 +283,7 @@ class Pedestrian(Supervisor):
                             self.eat()
 
                 if message[0] == PEDESTRIAN_CHANNEL and self.in_group:
-                    if message[1] == "group_vanish" and int(message[-1]) == int(self.p_name[-1]):
+                    if message[1] == "group_vanish" and int(message[-1]) == int(self.p_name[1]):
                         self.in_group = False
                         self.reset_limb_configuration()
                         curent_position = self.root_translation_field.getSFVec3f()
@@ -324,6 +324,7 @@ class Pedestrian(Supervisor):
         
         message = tuple(message)
         self.emitter.send(str(message).encode('utf-8'))
+
         self.emitter.setChannel(CPU_CHANNEL)
         print(f"Pedestrian {self.p_name} ordered {dishes_chosen}")
 
@@ -331,17 +332,17 @@ class Pedestrian(Supervisor):
         start_time = self.getTime()
         end_time = self.sample_exponential(EXPECTED_EATING_TIME)
         print(f"Pedestrian {self.p_name} eating for {end_time} ms")
-        while pedestrian.step(pedestrian.time_step) != -1 and self.getTime() - start_time < end_time:
+        while self.step(self.time_step) != -1 and self.getTime() - start_time < end_time:
             pass
 
         # send message to CPU
         self.emitter.setChannel(CPU_CHANNEL)
-        message = (CPU_CHANNEL, "finish_eating", int(self.p_name[-1]))
+        message = (PEDESTRIAN_CHANNEL, "finish_eating", int(self.p_name[1]))
         self.emitter.send(str(message).encode('utf-8'))
 
         # make group vanish
         self.emitter.setChannel(PEDESTRIAN_CHANNEL)
-        message = (PEDESTRIAN_CHANNEL, "group_vanish", int(self.p_name[-1]))
+        message = (PEDESTRIAN_CHANNEL, "group_vanish", int(self.p_name[1]))
         self.emitter.send(str(message).encode('utf-8'))
         self.in_group = False
         self.reset_limb_configuration()

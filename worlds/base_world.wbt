@@ -16,8 +16,8 @@ EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/project
 WorldInfo {
 }
 Viewpoint {
-  orientation 0.4238386569458237 0.06002578525497911 -0.9037464788218449 2.8869856151503885
-  position 3.7500770384474293 -1.2661437114649507 11.312238692684922
+  orientation -0.5171553381585455 0.0014057185065725194 0.8558904019613729 3.1369452105525446
+  position 6.246620174739051 -2.057797567453604 9.424965381498575
   follow "inside"
 }
 TexturedBackground {
@@ -44,33 +44,33 @@ RectangleArena {
   }
 }
 Worktop {
-  translation -6.59 2.59 0.55
+  translation -6.98 2.59 0.55
   size 0.8 4 1
 }
 Worktop {
-  translation -7 0.19 0.55
+  translation -7.37 0.19 0.55
   name "worktop(1)"
   size 1.6 0.8 1
 }
 Plate {
-  translation -6.59 1.18 1.0499411399999996
-  rotation -0.7622523701811291 -0.6472757556845339 0.0023281443826876237 2.825627719588219e-16
+  translation -6.96 1.18 1.0499413473239252
+  rotation -0.8178329619841426 0.5754510155896491 0.00231839364330933 7.297561453948565e-16
   radius 0.3
 }
 Plate {
-  translation -6.59 2.4 1.0499411399999996
-  rotation 0.6376956501769876 -0.7702858348672518 0.0019975855951902435 1.9057617847844038e-16
+  translation -6.99 2.4 1.0499413473239252
+  rotation -0.9985066913415763 -0.05462954542294323 -1.062923645649475e-05 1.1893970799527937e-15
   name "plate(1)"
   radius 0.3
 }
 Plate {
-  translation -6.59 3.67 1.0499411399999996
-  rotation 0.39346539448435935 0.9193392689613658 0.0005402673865485034 3.4862538290244814e-16
+  translation -6.98 3.67 1.0499413473239252
+  rotation 0.21865437771327356 0.97580209136763 0.0007359275647386215 1.0896015397024199e-15
   name "plate(2)"
   radius 0.3
 }
 Pedestrian {
-  translation -7.37 2.37 1.27
+  translation -7.62 2.37 1.27
   name "chef"
   shirtColor 1 1 1
   bodySlot [
@@ -112,8 +112,8 @@ RectangleArena {
   }
 }
 RoundTable {
-  translation 2.5 -2.55 -0.01560081417268655
-  rotation 0.33812961820948306 -0.9392489394708246 -0.05898975328343238 4.523148291364063e-18
+  translation 2.5 -2.61 -0.0155121
+  rotation -0.9531840666360563 0.30070687816494296 -0.031867044661283504 1.4975593499416932e-17
   name "round table BL"
   physics Physics {
   }
@@ -132,13 +132,13 @@ DEF tbl_bl_3 Chair {
   name "chair(5)"
 }
 DEF tbl_bl_4 Chair {
-  translation 2.44218 -1.69312 0
+  translation 2.44227 -1.78312 0
   rotation 0 0 1 -1.57
   name "chair(6)"
 }
 RoundTable {
-  translation 2.5 2.5 -0.01560081417268655
-  rotation 0.33812961820948306 -0.9392489394708246 -0.05898975328343238 4.523148291364063e-18
+  translation 2.5 2.5 -0.015512088728763862
+  rotation -0.9531840666360563 0.30070687816494296 -0.031867044661283504 1.4975593499416932e-17
   name "round table BR"
   physics Physics {
   }
@@ -163,8 +163,8 @@ DEF tbl_br_4 Chair {
   name "chair(1)"
 }
 RoundTable {
-  translation -2.5 2.5 -0.01560081417268655
-  rotation 0.33812961820948306 -0.9392489394708246 -0.05898975328343238 4.523148291364063e-18
+  translation -2.5 2.5 -0.015512088728763862
+  rotation -0.9531840666360563 0.30070687816494296 -0.031867044661283504 1.4975593499416932e-17
   name "round table TR"
   physics Physics {
   }
@@ -189,8 +189,8 @@ DEF tbl_tr_4 Chair {
   name "chair(2)"
 }
 RoundTable {
-  translation -2.501304593078251 -2.499997922048357 -0.017309449387004405
-  rotation -0.0015964613704918574 -0.9999987256494172 -3.2609774088206877e-06 0.030761643289252072
+  translation -2.5031771380322723 -2.499994936130673 -0.01517231291008525
+  rotation -0.0015941285114323535 -0.9999987293745486 -1.8913892145249204e-06 0.03762934371418482
   name "round table TL"
   physics Physics {
   }
@@ -307,7 +307,7 @@ DEF LineTrack Solid {
   name "solid(3)"
 }
 DEF LineTrack Solid {
-  translation -2.53001 -5.02 -0.049
+  translation -2.53001 -5.53 -0.049
   rotation 0 0 1 -3.1415853071795863
   children [
     Shape {
@@ -537,7 +537,7 @@ Robot {
     LineTrack {
       rotation 0 0 1 1.5708
       scale 0.15 0.15 1
-      color 1 0.4 0.1
+      color 1 0 0
     }
     GPS {
     }
@@ -708,9 +708,20 @@ LineTrack {
   color 0 0 1
 }
 Robot {
-  translation -4.55256 2.56615 0.714401
-  rotation 0.009806858346296559 0.0012876499600153564 -0.9999510825470195 1.5228682763750367
+  translation -4.64078 2.59329 0.690084
+  rotation -0.017959896611312483 0.01837689653263261 0.9996698113815081 -1.558555307179586
   children [
+    DEF Body Shape {
+      appearance PBRAppearance {
+        baseColor 0 0 0
+        roughness 1
+        metalness 0
+      }
+      geometry Cylinder {
+        height 1.4
+        radius 0.2
+      }
+    }
     GPS {
       name "back_gps"
     }
@@ -763,22 +774,22 @@ Robot {
     SpotLight {
       attenuation 0 0 1
       beamWidth 0.1
-      intensity 0.5
+      intensity 0.2
       location 0 0.2 -0.58
     }
     Camera {
-      translation 0 0.23 -0.67
+      translation -7.96637e-06 0.23 -0.63
       rotation 0 1 0 1.5699996938995748
       name "color_sensor"
     }
     DistanceSensor {
-      translation 0.09 0.2 -0.66
+      translation 0.1 0.2 -0.63
       rotation 0 1 0 1.57
       name "ir_w_1"
       type "infra-red"
     }
     DistanceSensor {
-      translation -0.09 0.2 -0.66
+      translation -0.1 0.2 -0.63
       rotation 0 1 0 1.57
       name "ir_w_2"
       type "infra-red"
@@ -885,25 +896,14 @@ Robot {
       ]
       name "head"
     }
-    DEF Body Shape {
-      appearance PBRAppearance {
-        baseColor 0 0 0
-        roughness 1
-        metalness 0
-      }
-      geometry Cylinder {
-        height 1.4
-        radius 0.2
-      }
-    }
     BallJoint {
       jointParameters BallJointParameters {
-        position 3.2553866331237664
+        position 3.3345257714483685
         anchor 0 0.5 -0.505
       }
       endPoint Solid {
-        translation -0.018379184999535836 0.5082296310968442 -0.5061150819561009
-        rotation 0.9094419602690224 0.2276636989548305 -0.34797206939672914 2.592667707033262
+        translation -0.01223880536838944 0.5166952415449918 -0.514190787265964
+        rotation -0.9946920551544942 -0.07547443100151535 -0.06993801310822394 3.3125783335061887
         children [
           DEF ball_h Shape {
             appearance PBRAppearance {
@@ -918,27 +918,28 @@ Robot {
         name "solid(2)"
         boundingObject USE ball_h
         physics Physics {
-          density 200
+          density -1
+          mass 50
         }
       }
     }
     HingeJoint {
       jointParameters HingeJointParameters {
-        position 18.199187623944724
-        anchor 0.25 0 -0.305
+        position 18.26310508846273
+        anchor 0.255 0 -0.31
       }
       device [
         RotationalMotor {
           name "motor_1"
-          maxTorque 100
+          maxTorque 1000
         }
         PositionSensor {
           name "ps_1"
         }
       ]
       endPoint Solid {
-        translation 0.2556438497863207 0.004562717593899186 -0.3020519021540548
-        rotation -0.6878963186948468 0.09339606804690462 -0.719774846184177 2.964445895050959
+        translation 0.2552169885201172 -0.0003031027852494568 -0.3118603416105292
+        rotation -0.03262707326609285 -0.9989927402303501 -0.030805503682705036 4.712643172684447
         children [
           DEF Wheel Shape {
             appearance PBRAppearance {
@@ -953,27 +954,28 @@ Robot {
         ]
         boundingObject USE Wheel
         physics DEF wheel_physics Physics {
-          density 200
+          density -1
+          mass 100
         }
       }
     }
     HingeJoint {
       jointParameters HingeJointParameters {
-        position 194.33553947403342
-        anchor -0.25 0 -0.305
+        position 194.29131953278946
+        anchor -0.255 0 -0.31
       }
       device [
         RotationalMotor {
           name "motor_2"
-          maxTorque 100
+          maxTorque 1000
         }
         PositionSensor {
           name "ps_2"
         }
       ]
       endPoint Solid {
-        translation -0.26049582133073645 0.004316119341867868 -0.309196340763108
-        rotation -0.677893891027525 0.16592882768989736 -0.7161895675371279 2.816808931122838
+        translation -0.2551356301378984 0.0013563612209065014 -0.3088249764221038
+        rotation 0.02212667735975494 -0.9995106714782398 0.0221094493403942 4.713296955316663
         children [
           USE Wheel
         ]
@@ -986,7 +988,8 @@ Robot {
   name "waiter"
   boundingObject USE Body
   physics Physics {
-    density 300
+    density -1
+    mass 100
   }
   controller "waiter_controller"
 }
@@ -1011,7 +1014,7 @@ Robot {
       ]
       channel 3
       allowedChannels [
-        5, 4, 3, 2
+        6, 5, 4, 3, 2
       ]
     }
     Receiver {
@@ -1055,9 +1058,24 @@ Robot {
   controller "main_computer"
 }
 Robot {
-  translation -2.55235 -4.51774 0.014990193189473653
-  rotation -1.3882311791244793e-14 -1.3874939845688942e-14 -1 0.0049343671066299855
+  translation -2.50421 -4.5437 0.0712826
+  rotation 0.983155739618544 0.007661582266519765 -0.18260912302589644 0.03222503831655889
   children [
+    Solid {
+      translation 0 0 -0.015
+      children [
+        DEF blocker Shape {
+          appearance PBRAppearance {
+          }
+          geometry Box {
+            size 0.1 0.1 0.001
+          }
+        }
+      ]
+      boundingObject USE blocker
+      physics Physics {
+      }
+    }
     Display {
       translation 0 0 0.11
       children [
@@ -1112,7 +1130,7 @@ Robot {
           name "antena"
         }
       ]
-      channel 7
+      channel 1
       allowedChannels [
         7, 1
       ]
@@ -1469,8 +1487,17 @@ Robot {
 }
 Robot {
   children [
+    Receiver {
+      channel 6
+      allowedChannels [
+        6
+      ]
+    }
     Emitter {
       channel 1
+      allowedChannels [
+        1, 7
+      ]
     }
   ]
   name "world_generator"
@@ -1529,8 +1556,8 @@ Wall {
   size 0.2 1.3 1.4
 }
 DEF g1_p1 Pedestrian {
-  translation 0 -12 1.26
-  rotation 0 0 1 1.5708
+  translation 0.00508177 -11.5719 1.33022
+  rotation 0 0 1 1.73011
   name "g1_p1"
   controller "my_pedestrain_controller"
   controllerArgs [
@@ -1552,8 +1579,8 @@ DEF g1_p1 Pedestrian {
   ]
 }
 DEF g1_p2 Pedestrian {
-  translation 0 -12 1.26
-  rotation 0 0 1 1.5708
+  translation -0.0587851 -11.4234 1.33691
+  rotation 0 0 1 1.7317
   name "g1_p2"
   controller "my_pedestrain_controller"
   controllerArgs [
@@ -1561,7 +1588,7 @@ DEF g1_p2 Pedestrian {
   ]
   bodySlot [
     Emitter {
-      channel 1
+      channel 7
       allowedChannels [
         7, 3, 1
       ]
@@ -1575,8 +1602,8 @@ DEF g1_p2 Pedestrian {
   ]
 }
 DEF g1_p3 Pedestrian {
-  translation -0.0599986 -11.87 1.26
-  rotation 0 0 1 1.5708
+  translation 0.0397658 -11.4051 1.33691
+  rotation 0 0 1 1.73264
   name "g1_p3"
   controller "my_pedestrain_controller"
   controllerArgs [
@@ -1584,7 +1611,7 @@ DEF g1_p3 Pedestrian {
   ]
   bodySlot [
     Emitter {
-      channel 1
+      channel 3
       allowedChannels [
         7, 3, 1
       ]
@@ -1598,8 +1625,8 @@ DEF g1_p3 Pedestrian {
   ]
 }
 DEF g1_p4 Pedestrian {
-  translation -0.04 -11.89 1.26
-  rotation 0 0 1 1.5708
+  translation -0.194326 -11.3921 1.33022
+  rotation 0 0 1 1.46944
   name "g1_p4"
   controller "my_pedestrain_controller"
   controllerArgs [
@@ -1607,7 +1634,7 @@ DEF g1_p4 Pedestrian {
   ]
   bodySlot [
     Emitter {
-      channel 1
+      channel 3
       allowedChannels [
         7, 3, 1
       ]
@@ -1621,8 +1648,8 @@ DEF g1_p4 Pedestrian {
   ]
 }
 DEF g2_p1 Pedestrian {
-  translation -0.03 -11.95 1.26
-  rotation 0 0 1 1.5708
+  translation -0.146796 -11.6753 1.29538
+  rotation 0 0 -1 -1.510035307179586
   name "g2_p1"
   controller "my_pedestrain_controller"
   controllerArgs [
@@ -1645,8 +1672,8 @@ DEF g2_p1 Pedestrian {
   ]
 }
 DEF g2_p2 Pedestrian {
-  translation -0.029993 -11.86 1.26
-  rotation 0 0 1 1.5708
+  translation 0.0522954 -11.5147 1.3044
+  rotation 0 0 -1 -1.562635307179586
   name "g2_p2"
   controller "my_pedestrain_controller"
   controllerArgs [
@@ -1669,8 +1696,8 @@ DEF g2_p2 Pedestrian {
   ]
 }
 DEF g2_p3 Pedestrian {
-  translation -0.079994 -11.77 1.26
-  rotation 0 0 1 1.5708
+  translation 0.0371021 -11.7175 1.30542
+  rotation 0 0 -1 -1.596515307179586
   name "g2_p3"
   controller "my_pedestrain_controller"
   controllerArgs [
@@ -1693,8 +1720,8 @@ DEF g2_p3 Pedestrian {
   ]
 }
 DEF g2_p4 Pedestrian {
-  translation 0.0199949 -11.85 1.26
-  rotation 0 0 1 1.5708
+  translation 0.0605286 -11.6667 1.24585
+  rotation 0 0 -1 -1.6540553071795863
   name "g2_p4"
   controller "my_pedestrain_controller"
   controllerArgs [

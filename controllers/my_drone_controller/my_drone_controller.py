@@ -36,7 +36,7 @@ FLYING_ATTITUDE = 1
 MAX_FORWARD_SPEED = 0.5
 MAX_SIDEWAY_SPEED = 0.5
 MAX_YAW_RATE = 1
-MAX_ALTITUDE = 2.5
+MAX_ALTITUDE = 3
 SPEEDING_UNIT = 0.005
 
 TIME_MARGIN = 500
@@ -345,8 +345,10 @@ class HandleCommands:
         self.emitter.send(str(message).encode('utf-8'))
         self.emitter.setChannel(CPU_CHANNEL)
 
-        message = (CPU_CHANNEL, "group_dropped", group_num, table_num)
+        message = (DRONE_CHANNEL, "group_dropped", group_num, table_num)
         self.emitter.setChannel(CPU_CHANNEL)
+        self.emitter.send(str(message).encode('utf-8'))
+
 
     def lift_off(self):
         print('Drone: lifiting off')

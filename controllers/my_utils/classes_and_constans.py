@@ -20,6 +20,7 @@ FOOD_ITEMS = {"dish1": 35, "dish2": 60, "dish3": 45, "dish4": 50, "dish5": 15}
 RATE_OF_ARRIVAL = 1/2*60*1000
 EXPECTED_PONDER_TIME = 2*60*1000
 EXPECTED_EATING_TIME = 1*60*1000
+EXPECTED_PREP_TIME = 1*60*1000
 
 class Location:
     @abstractmethod
