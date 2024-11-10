@@ -1,13 +1,17 @@
 from unified_planning.shortcuts import *
 from unified_planning.model import Problem, Fluent, Action, Object
 from unified_planning.engines import engine
-
+from unified_planning.engines.sequential_simulator import UPSequentialSimulator
 from unified_planning.model.metrics import MaximizeExpressionOnFinalState
+from unified_planning.plans.plan import PlanKind
 from collections import defaultdict
 from itertools import product
+import time
+from unified_planning.plans.time_triggered_plan import _get_timepoint_effects, _extract_action_timings, _get_timepoint_simulated_effects
 
+CUST_COUNT = 2
 
-def create_diner_problem():
+def solve_problem():
     # Create the planning problem
     problem = Problem("DinerProblem")
 
@@ -53,11 +57,11 @@ def create_diner_problem():
     robots = [
         host := Object("host", Robot),
         server_1 := Object("server_1", Robot),
-        server_2 := Object("server_2", Robot),
+        # server_2 := Object("server_2", Robot),
         cleaner := Object("cleaner", Robot)
 
     ]
-    customers = [Object(f"customer_{i}", Customer) for i in range(1, 5)]
+    customers = [Object(f"customer_{i}", Customer) for i in range(1, CUST_COUNT)]
     fake_customer = Object('fake_customer', Customer)
     orders = [Object(f'order{i}', Order) for i in range(2)]
     fake_order = Object('fake_order', Order)
@@ -214,14 +218,14 @@ def create_diner_problem():
     take_order.add_effect(Order_Taken(cust), True)
     take_order.add_effect(Used(order), True)
     take_order.add_effect(Owner(order), cust)
-    take_order.add_effect(Food(order), Times(Party_Size(cust), 20))
+    take_order.add_effect(Food(order), 20)#Times(Party_Size(cust), 20)) to be handled by simulation
 
     # prepare the food
     make_food = DurativeAction(f'make_order', order=Order)
     PREP_TIME = 2  # TODO: Decide on Prepping time
 
     order = make_food.parameter('order')
-    make_food.set_fixed_duration(total_time := Times(Party_Size(Owner(order)), PREP_TIME))
+    make_food.set_fixed_duration(total_time := 2)#Times(Party_Size(Owner(order)), PREP_TIME))
 
     make_food.add_condition(StartTiming(), Used(order))
     make_food.add_condition(StartTiming(), Not(Done(order)))
@@ -266,7 +270,7 @@ def create_diner_problem():
 
     eat.add_effect(EndTiming(), Occupied(table), False)
     eat.add_effect(EndTiming(), Clean(table), False)
-    eat.add_increase_effect(EndTiming(), Revenue, Times(Party_Size(cust), 20))
+    eat.add_increase_effect(EndTiming(), Revenue, 20)#Times(Party_Size(cust), 20)) ## will be insreted by simulation
 
     move = DurativeAction('move', rob=Robot, loc1=Location, loc2=Location)
     rob = move.parameter('rob')
@@ -279,7 +283,6 @@ def create_diner_problem():
     move.add_condition(StartTiming(), Not(Stood_In(loc2)))
 
     move.add_effect(EndTiming(), Stood_In(loc1), False)
-
     move.add_effect(EndTiming(), At(rob), loc2)
     move.add_effect(EndTiming(), Stood_In(loc2), True)
 
@@ -296,8 +299,8 @@ def create_diner_problem():
     problem.set_initial_value(At(host), TL1)  # Host starts at the entrance
     problem.set_initial_value(Stood_In(TL1), True)
     problem.set_initial_value(At(server_1), K)  # Server starts at k
-    problem.set_initial_value(At(server_2), BL2)  # Server starts at k
-    problem.set_initial_value(Stood_In(BL2), True)
+    # problem.set_initial_value(At(server_2), BL2)  # Server starts at k
+    # problem.set_initial_value(Stood_In(BL2), True)
     problem.set_initial_value(Stood_In(K), True)
     problem.set_initial_value(At(cleaner), kitchen)  # Cleaner starts at the kitchen
     problem.set_initial_value(Stood_In(kitchen), True)
@@ -307,7 +310,7 @@ def create_diner_problem():
     problem.set_initial_value(Table_At(table_br), TBL_BR)
     problem.set_initial_value(Job(host), HOST)
     problem.set_initial_value(Job(server_1), SERVER)
-    problem.set_initial_value(Job(server_2), SERVER)
+    # problem.set_initial_value(Job(server_2), SERVER)
     problem.set_initial_value(Job(cleaner), CLEANER)
     problem.set_initial_value(Table_At(fake_table), fake_location)
 
@@ -333,44 +336,261 @@ def create_diner_problem():
 
     problem.add_actions([pick_up_customers, seat_customers, clean_table, decide_order, take_order, make_food, take_food, serve_food, eat, move])
 
+    problem.add_goal(Seated(customers[0]))
+    problem.add_goal(Order_Taken(customers[0]))
     problem.add_goal(Holds(server_1))
 
     # MaximizeExpressionOnFinalState(Revenue)
 
-    # how to add timer?
-    # print(total_distances)
+    # Check for planners
+    from unified_planning.shortcuts import get_environment
 
-    return problem
+    env = get_environment()
+    print(env.factory.engines)
+    # Example heuristics
+    heuristics = ['h_add', 'h_max', 'h_ff', 'h_goalcount']
 
+    planner_config = {
+        'heuristic': 'h_goalcount',
+    }
+    
+    class TemporalSimulator:
+        def __init__(self, problem, replanner):
+            self.problem = problem
+            self.state = problem.initial_value
+            self.replanner = replanner
 
-# Check for planners
-from unified_planning.shortcuts import get_environment
+        def simulate(self, plan):
+            events = []
+            for start, action, duration in plan:
+                if duration != None:
+                    events.append((start, 'start', action))
+                    events.append((start + duration, 'end', action))
+                else:
+                    events.append((start, 'start', action))
+                    events.append((start, 'end', action))
+                # start_time = action.start_time
+                # end_time = start_time + action.duration
+                # events.append((start_time, 'start', action))
+                # events.append((end_time, 'end', action))
 
-env = get_environment()
-# for engine_name in env.factory.engines:
-#     engine = meta_engine(engine_name)
-#     print(f"Engine: {engine_name}")
-#     print(f"  Supports OBJECT_FLUENTS: {engine.supports('OBJECT_FLUENTS')}")
-#     print(f"  Supports FLAT_TYPING: {engine.supports('FLAT_TYPING')}")
-#     print(f"  Supports ACTION_BASED: {engine.supports('ACTION_BASED')}")
+            events.sort(key=lambda x: x[0])
 
-print(env.factory.engines)
+            for time, event, action in events:
+                if event == 'start':
+                    self.apply_start_effects(action)
+                elif event == 'end':
+                    self.apply_end_effects(action)
 
+            return self.state, self.problem, self.replanner
 
-# Create and solve the problem
-problem = create_diner_problem()
-print(problem)
-with OneshotPlanner(problem_kind=problem.kind, name="tamer") as planner:
-    result = planner.solve(problem)
-    plan = result.plan
-    if plan is not None:
-        print(f"{planner.name} returned:")
-        for start, action, duration in plan.timed_actions:
-            if duration != None:
-                print(f"{float(start)}: {action} [{float(duration)}]")
+        def apply_end_effects(self, action):
+            # implemnt using update_initial_value
+            if isinstance(action.action, DurativeAction):
+                effect = action.action.effects[list(action.action.effects.keys())[0]]
+                # print(effect[0].fluent, effect[0].value, effect[0].kind)
+            if isinstance(action.action, InstantaneousAction):
+                effect = action.action.effects
+
+            # print(effect)
+            # print(parameters)
+
+            parameters = action.actual_parameters
+            params_to_actual_params = dict()
+            for param, ac_param in zip(action.action.parameters, action.actual_parameters):
+                # print(param.name, ac_param)s
+                params_to_actual_params[param.name] = ac_param
+                # print(action.action.parameter(param.name))
+            # apply the effects
+            # print("paramters:", parameters)
+            # print("params_to_actual_params:", params_to_actual_params)
+            for fluent, value in zip([f.fluent for f in effect], [f.value for f in effect]):
+                # print(fluent.args, params_to_actual_params)
+                # print(type(fluent.args[0]))
+                # print(str(fluent.args[0]))
+                # print(type(fluent.args[0].parameter().name))
+                cur_params = tuple([params_to_actual_params[arg.parameter().name] for arg in fluent.args])
+                # print(cur_params)
+                
+                if not value.is_constant():
+                    # print(value)
+                    # print(value.get_contained_names())
+                    # print("val_args:", value._content)
+                    for name in value.get_contained_names():
+                        if name in params_to_actual_params:
+                            value = params_to_actual_params[name]
+                            break
+
+                # print(fluent.fluent()(*cur_params), value)
+                # print(fluent.fluent(), fluent.args)
+                # print(fluent.fluent()(params))
+                self.problem.set_initial_value(fluent.fluent()(*cur_params), value)
+                self.replanner.update_initial_value(fluent.fluent()(*cur_params), value)
+            
+
+        def apply_start_effects(self, action):
+            # implemnt using update_initial_value
+            # print(action, type(action))
+            pass
+
+    def convert_durative_to_instantaneous(problem: Problem) -> Problem:
+        new_problem = Problem(problem.name + "_instantaneous")
+        
+        # Copy fluents, objects, and initial state
+        for fluent in problem.fluents:
+            new_problem.add_fluent(fluent)
+        for obj in problem.objects:
+            new_problem.add_object(obj)
+        for fluent, value in problem.initial_values.items():
+            new_problem.set_initial_value(fluent, value)
+        
+        # Copy goals
+        for goal in problem.goals:
+            new_problem.add_goal(goal)
+        
+        # Convert durative actions to instantaneous actions
+        for action in problem.actions:
+            if isinstance(action, DurativeAction):
+                # Split durative action into start and end instantaneous actions
+                start_action = InstantaneousAction(action.name + "_start")
+                end_action = InstantaneousAction(action.name + "_end")
+                
+                # Copy parameters
+                for param in action.parameters:
+                    start_action.parameters.append(param)
+                    end_action.parameters.append(param)
+                
+                # Copy conditions and effects
+                for condition in action.conditions:
+                    if condition.timing.is_start():
+                        start_action.add_precondition(condition.condition)
+                    elif condition.timing.is_end():
+                        end_action.add_precondition(condition.condition)
+                for effect in action.effects:
+                    if effect.timing.is_start():
+                        start_action.add_effect(effect.fluent, effect.value)
+                    elif effect.timing.is_end():
+                        end_action.add_effect(effect.fluent, effect.value)
+                
+                new_problem.add_action(start_action)
+                new_problem.add_action(end_action)
             else:
-                print(f"{float(start)}: {action}")
-    else:
-        print("No plan found.")
+                new_problem.add_action(action)
+        
+        return new_problem
+   
+    def ground_preconditions(preconditions, problem):
+        grounded_preconditions = []
+        for precondition in preconditions:
+            if precondition.is_exists():
+                # Ground the existential quantifier by iterating over all possible values
+                for typename in problem.user_types:
+                    for obj in problem.objects(typename):
+                        grounded_precondition = precondition.ground({precondition.variable: obj})
+                        grounded_preconditions.append(grounded_precondition)
+            else:
+                grounded_preconditions.append(precondition)
+        return grounded_preconditions
 
-print("Done")
+    def ground_all_preconditions(problem: Problem) -> Problem:
+        new_problem = Problem(problem.name + "_grounded")
+    
+        # Copy fluents, objects, and initial state
+        for fluent in problem.fluents:
+            new_problem.add_fluent(fluent)
+        for typename in problem.user_types:
+            for obj in problem.objects(typename):
+                new_problem.add_object(obj)
+        for fluent, value in problem.initial_values.items():
+            new_problem.set_initial_value(fluent, value)
+        
+        # Copy goals
+        for goal in problem.goals:
+            new_problem.add_goal(goal)
+        
+        # Ground preconditions for all actions
+        for action in problem.actions:
+            if isinstance(action, DurativeAction):
+                new_action = DurativeAction(action.name)
+                # Copy parameters
+                for param in action.parameters:
+                    new_action.parameters.append(param)
+                # Ground preconditions
+                start_preconditions = [cond.condition for cond in action.conditions if isinstance(cond.timing, StartTiming)]
+                end_preconditions = [cond.condition for cond in action.conditions if isinstance(cond.timing, EndTiming)]
+                for precondition in ground_preconditions(start_preconditions, problem):
+                    new_action.add_start_precondition(precondition)
+                for precondition in ground_preconditions(end_preconditions, problem):
+                    new_action.add_end_precondition(precondition)
+                # Copy effects
+                for effect in action.effects:
+                    new_action.add_effect(effect.fluent, effect.value, effect.timing)
+                new_problem.add_action(new_action)
+            elif isinstance(action, InstantaneousAction):
+                new_action = InstantaneousAction(action.name)
+                # Copy parameters
+                for param in action.parameters:
+                    new_action.parameters.append(param)
+                # Ground preconditions
+                for precondition in ground_preconditions(action.preconditions, problem):
+                    new_action.add_precondition(precondition)
+                # Copy effects
+                for effect in action.effects:
+                    new_action.add_effect(effect.fluent, effect.value)
+                new_problem.add_action(new_action)
+        
+        return new_problem
+    
+    original_problem = problem
+    # grounded_problem = ground_all_preconditions(original_problem)
+    # with Compiler(problem_kind=grounded_problem.kind,
+    # compilation_kind=CompilationKind.USERTYPE_FLUENTS_REMOVING, ) as compiler:
+    #     compilation_result_1 = compiler.compile(grounded_problem)
+    #     with Compiler(problem_kind=compilation_result_1.problem.kind, compilation_kind=CompilationKind.GROUNDING) as bounded_types_compiler:
+    #         compilation_result_2 = bounded_types_compiler.compile(compilation_result_1.problem)
+    with Replanner(problem=problem, name="replanner[tamer]") as replanner:
+        result = replanner.resolve(problem)
+        plan = result.plan
+        # seudo_plan = result.plan
+        # plan = seudo_plan.replace_action_instances(compilation_result_2.map_back_action_instance).replace_fluent_instances(compilation_result_1.map_back_fluent_instance)
+        if plan is not None:
+            print(f"{replanner.name} returned:")
+            for start, action, duration in plan.timed_actions:
+                if duration != None:
+                    print(f"{float(start)}: {action} [{float(duration)}]")
+                    # start_t, end_t = _extract_action_timings(action.action, start=start, duration=duration)
+                    # print(_get_timepoint_effects(action.action, start=start_t, timing=end_t, duration=duration))
+                else:
+                    print(f"{float(start)}: {action}")
+
+
+            temporal_simulator = TemporalSimulator(problem, replanner)
+            state, problem, replanner = temporal_simulator.simulate(plan.timed_actions)
+            replanner.add_goal(Served(customers[0]))
+            replanner.remove_goal(Holds(server_1))
+
+            new_result = replanner.resolve()
+            new_plan = new_result.plan
+            if new_plan is not None:
+                print(f"{replanner.name} returned:")
+                for start, action, duration in new_plan.timed_actions:
+                    if duration != None:
+                        print(f"{float(start)}: {action} [{float(duration)}]")
+                    else:
+                        print(f"{float(start)}: {action}")
+
+            else:
+                print(f"{replanner.name} failed to find a plan")
+
+        else:
+            print(f"{replanner.name} failed to find a plan")  
+
+    print("Done")
+
+
+
+
+if __name__ == '__main__':
+    solve_problem()
+
+
