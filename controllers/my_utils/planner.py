@@ -61,7 +61,7 @@ def solve_problem():
         cleaner := Object("cleaner", Robot)
 
     ]
-    customers = [Object(f"customer_{i}", Customer) for i in range(1, CUST_COUNT)]
+    customers = [Object(f"customer_{i}", Customer) for i in range(1, CUST_COUNT+1)]
     fake_customer = Object('fake_customer', Customer)
     orders = [Object(f'order{i}', Order) for i in range(2)]
     fake_order = Object('fake_order', Order)
@@ -124,6 +124,7 @@ def solve_problem():
     Ready_To_Order = Fluent('Ready_To_Order', BoolType(), customer=Customer)
     Order_Taken = Fluent('Order_Taken', BoolType(), customer=Customer)
     Served = Fluent("Served", BoolType(), customer=Customer)
+    Eaten = Fluent("Eaten", BoolType(), customer=Customer)
     Seated_At = Fluent('Seated_At', Table, customer=Customer)
     Party_Size = Fluent('Party_Size', IntType(), customer=Customer)
 
@@ -270,6 +271,7 @@ def solve_problem():
 
     eat.add_effect(EndTiming(), Occupied(table), False)
     eat.add_effect(EndTiming(), Clean(table), False)
+    eat.add_effect(EndTiming(), Eaten(cust), True)
     eat.add_increase_effect(EndTiming(), Revenue, 20)#Times(Party_Size(cust), 20)) ## will be insreted by simulation
 
     move = DurativeAction('move', rob=Robot, loc1=Location, loc2=Location)
@@ -325,6 +327,7 @@ def solve_problem():
     problem.add_fluent(Order_Taken, default_initial_value=False)
     problem.add_fluent(Served, default_initial_value=False)
     problem.add_fluent(Party_Size, default_initial_value=0)
+    problem.add_fluent(Eaten, default_initial_value=False)
 
     problem.add_fluent(Used, default_initial_value=False)
     problem.add_fluent(Done, default_initial_value=False)
@@ -348,10 +351,11 @@ def solve_problem():
     env = get_environment()
     print(env.factory.engines)
     # Example heuristics
-    heuristics = ['h_add', 'h_max', 'h_ff', 'h_goalcount']
+    heuristics = ['hmax', 'hadd', 'hff', 'blind', 'hlandmarks']
 
     planner_config = {
-        'heuristic': 'h_goalcount',
+         'heuristic': 'hff',
+         'weight': 0.8,
     }
     
     class TemporalSimulator:
@@ -548,7 +552,7 @@ def solve_problem():
     #     compilation_result_1 = compiler.compile(grounded_problem)
     #     with Compiler(problem_kind=compilation_result_1.problem.kind, compilation_kind=CompilationKind.GROUNDING) as bounded_types_compiler:
     #         compilation_result_2 = bounded_types_compiler.compile(compilation_result_1.problem)
-    with Replanner(problem=problem, name="replanner[tamer]") as replanner:
+    with Replanner(problem=problem, name="replanner[tamer]", params=planner_config) as replanner:
         result = replanner.resolve(problem)
         plan = result.plan
         # seudo_plan = result.plan
@@ -568,6 +572,13 @@ def solve_problem():
             state, problem, replanner = temporal_simulator.simulate(plan.timed_actions)
             replanner.add_goal(Served(customers[0]))
             replanner.remove_goal(Holds(server_1))
+            # replanner.add_goal(Clean(table_bl))
+            cur_table = state(Seated_At(customers[0])) # table_bl
+            table_loc = state(Table_At(cur_table))
+            print(f"Table location: {table_loc}")
+            replanner.add_goal(Eaten(customers[0]))
+            replanner.add_goal(Equals(At(cleaner), table_loc))
+            replanner.add_goal(Clean(table_bl))
 
             new_result = replanner.resolve()
             new_plan = new_result.plan
