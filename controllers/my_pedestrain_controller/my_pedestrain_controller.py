@@ -25,7 +25,7 @@ import os
 libraries_path = os.path.abspath('../my_utils')
 sys.path.append(libraries_path)
 
-from classes_and_constans import DRONE_CHANNEL, WORLD_GENERATOR_CHANNEL, PEDESTRIAN_CHANNEL, FOOD_ITEMS, CPU_CHANNEL, EXPECTED_PONDER_TIME, WAITER_CHANNEL, RATE_OF_ARRIVAL, EXPECTED_EATING_TIME
+from classes_and_constans import DRONE_CHANNEL, WORLD_GENERATOR_CHANNEL, PEDESTRIAN_CHANNEL, FOOD_ITEMS, CPU_CHANNEL, RATE_OF_PONDER_TIME, WAITER_CHANNEL, RATE_OF_ARRIVAL, RATE_OF_EATING_TIME
 
 
 offsets = [np.array([0, 0]), np.array([0, -0.5]), np.array([-0.5, 0]), np.array([-0.5, -0.5])]
@@ -302,7 +302,7 @@ class Pedestrian(Supervisor):
         print(f"Pedestrian {self.p_name} is pondering")
         # Ponder
         start_time = self.getTime()
-        end_time = self.sample_exponential(EXPECTED_PONDER_TIME)
+        end_time = self.sample_exponential(RATE_OF_PONDER_TIME)
         print(f"Pedestrian {self.p_name} pondering for {end_time} ms")
         while pedestrian.step(pedestrian.time_step) != -1 and self.getTime() - start_time < end_time:
             print(self.getTime() - start_time)
@@ -330,7 +330,7 @@ class Pedestrian(Supervisor):
 
     def eat(self):
         start_time = self.getTime()
-        end_time = self.sample_exponential(EXPECTED_EATING_TIME)
+        end_time = self.sample_exponential(RATE_OF_EATING_TIME)
         print(f"Pedestrian {self.p_name} eating for {end_time} ms")
         while self.step(self.time_step) != -1 and self.getTime() - start_time < end_time:
             pass

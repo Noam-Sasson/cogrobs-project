@@ -37,7 +37,7 @@ MAX_FORWARD_SPEED = 0.5
 MAX_SIDEWAY_SPEED = 0.5
 MAX_YAW_RATE = 1
 MAX_ALTITUDE = 3
-SPEEDING_UNIT = 0.005
+SPEEDING_UNIT = 0.01
 
 TIME_MARGIN = 500
 
@@ -236,12 +236,12 @@ class HandleCommands:
             else:
                 # print("slowing down")
                 if np.abs(forward_desired) > SPEEDING_UNIT:
-                    forward_desired -= np.sign(forward_desired)*SPEEDING_UNIT
+                    forward_desired -= np.sign(forward_desired)*SPEEDING_UNIT*0.5
                 else:
                     forward_desired = 0
 
                 if np.abs(sideways_desired) > SPEEDING_UNIT:
-                    sideways_desired -= np.sign(sideways_desired)*SPEEDING_UNIT
+                    sideways_desired -= np.sign(sideways_desired)*SPEEDING_UNIT*0.5
                 else:
                     sideways_desired = 0
 

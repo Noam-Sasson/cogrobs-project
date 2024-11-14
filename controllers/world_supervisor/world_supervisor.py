@@ -9,7 +9,7 @@ import ast
 libraries_path = os.path.abspath('../my_utils')
 sys.path.append(libraries_path)
 
-from classes_and_constans import CPU_CHANNEL, WORLD_GENERATOR_CHANNEL, PEDESTRIAN_CHANNEL, DRONE_CHANNEL, RATE_OF_ARRIVAL, FOOD_ITEMS, EXPECTED_PREP_TIME
+from classes_and_constans import CPU_CHANNEL, WORLD_GENERATOR_CHANNEL, PEDESTRIAN_CHANNEL, DRONE_CHANNEL, RATE_OF_ARRIVAL, FOOD_ITEMS, RATE_OF_PREP_TIME
 
 init_xyloc = np.array([-2.5, -6])
 offsets = [np.array([0, 0]), np.array([0, -0.5]), np.array([-0.5, 0]), np.array([-0.5, -0.5])]
@@ -116,13 +116,12 @@ class WorldGenerator(Supervisor):
                 if message[1] == "make_food":
                     group = message[2]
                     food = message[3:]
-                    next_food_time = self.sample_exponential(EXPECTED_PREP_TIME)
+                    next_food_time = self.sample_exponential(RATE_OF_PREP_TIME)
                     self.foods_to_be_made[group] = {"items": food, "time": self.current_time + next_food_time}
                     print(f"Kitchen: Food to be made: {food} at time {next_food_time}")
 
             self.receiver.nextPacket()
 
 if __name__ == "__main__":
-    avrg_time_of_arrival = 0.1*60*1000 # 2 minutes
-    generator = WorldGenerator(poisson_rate = 1/avrg_time_of_arrival)
+    generator = WorldGenerator(poisson_rate = RATE_OF_ARRIVAL)
     generator.run()

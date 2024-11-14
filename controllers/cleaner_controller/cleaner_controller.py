@@ -252,32 +252,85 @@ class HandeCommands:
         goal_direction = goal_direction / np.linalg.norm(goal_direction)
 
         # print("Robot direction: ", robot_direction)
-        # print("Goal direction: ", goal_direction)
-
+        # print("Goal direction: ", goal_direction)     
 
         angle = np.arccos(np.dot(robot_direction, goal_direction)/(np.linalg.norm(robot_direction)*np.linalg.norm(goal_direction)))
+        print("Angle: ", angle)
         # print("Angle: ", angle)
         closest_angle = min([rot for rot in rotations], key=lambda x: abs(x - angle))
 
+        print("Original closest angle: ", closest_angle)
         # find direction of left/right rotation
         angle_sign = 1
         if np.cross(robot_direction, goal_direction) >= 0:
             angle_sign = -1
         
         if len(start_node.get_neighbours()) == 2 and closest_angle == SIDE:
-            closest_angle = FRONT
-        if len(start_node.get_neighbours()) == 3 and closest_angle == SIDE and len(start_node.name) >= 2 and len(end_node.name) >= 2 and start_node.name[:2] == end_node.name[:2]:
-            closest_angle = FRONT
+            if start_node.name == "tr_1" and end_node.name == "k" and closest_angle == SIDE:
+                if angle_sign == 1:
+                    closest_angle = FRONT
+                else:
+                    closest_angle = BACK
+            elif start_node.name == "tr_2" and end_node.name == "k" and closest_angle == SIDE:
+                if angle_sign == 1:
+                    closest_angle = BACK
+                else:
+                    closest_angle = FRONT
+            elif start_node.name == "br_2":
+                if angle_sign == 1:
+                    closest_angle = FRONT
+                else:
+                    closest_angle = BACK
+            elif start_node.name == "bl_1":
+                if angle_sign == 1:
+                    closest_angle = BACK
+                else:
+                    closest_angle = FRONT
+            elif start_node.name == "tl_1":
+                if angle_sign == 1:
+                    closest_angle = FRONT
+                else:
+                    closest_angle = BACK
+            elif start_node.name == "tl_2":
+                if angle_sign == 1:
+                    closest_angle = BACK
+                else:
+                    closest_angle = FRONT
+            else:
+                closest_angle = FRONT
+            
+
+        if len(start_node.get_neighbours()) == 3 and len(start_node.name) >= 2 and len(end_node.name) >= 2 and start_node.name[:2] == end_node.name[:2] \
+            and start_node.name[:2] not in ["mr", "ml"]:
+            if closest_angle == SIDE:
+                if start_node.name == "br_1":
+                    if angle_sign == -1:
+                        closest_angle = FRONT
+                    else:
+                        closest_angle = BACK
+                if start_node.name == "bl_2":
+                    if angle_sign == 1:
+                        closest_angle = FRONT
+                    else:
+                        closest_angle = BACK
+            elif closest_angle == FRONT:
+                if start_node.name == "br_1":
+                    angle_sign = 1
+                    closest_angle = SIDE
+                if start_node.name == "bl_2":
+                    closest_angle = SIDE
+                    angle_sign = -1
+                            
         
         closest_angle = closest_angle * angle_sign
 
-        if len(start_node.get_neighbours()) == 3 and closest_angle == FRONT:
-            if start_node.name == "bl_2":
-                closest_angle = -SIDE
-            if start_node.name == "br_1":
-                closest_angle = SIDE
+        # if len(start_node.get_neighbours()) == 3 and closest_angle == FRONT:
+        #     if start_node.name == "bl_2":
+        #         closest_angle = SIDE*angle_sign
+        #     if start_node.name == "br_1":
+        #         closest_angle = SIDE*angle_sign
 
-        # print("Closest Angle: ", closest_angle)
+        print("Closest Angle: ", closest_angle)
         if np.abs(closest_angle) > 0.1:
             self.make_turn(self.robot, closest_angle, self.left_motor, self.right_motor, self.max_speed, self.wheel_radius, self.distance_between_wheels, self.timestep)
         self.go_forward(self.robot, 0.1, self.left_motor, self.right_motor, self.max_speed, self.wheel_radius, self.distance_between_wheels, self.timestep)
@@ -315,7 +368,6 @@ class HandeCommands:
         self.dont_move()
         self.emitter.setChannel(CPU_CHANNEL)
         message = (CLEANER_CHANNEL, "reached_node", end_node.name)
-        print("Cleaner reached node: ", message)
         self.emitter.send(str(message).encode('utf-8'))
 
     def dont_move(self):

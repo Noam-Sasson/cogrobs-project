@@ -33,7 +33,6 @@ def solve_problem(initial_state_dict : dict):
     Customer = UserType("Customer")
     Location = UserType("Location")
     Order = UserType('Order')
-
     # Define objects in the problem
 
     tables = [
@@ -111,7 +110,7 @@ def solve_problem(initial_state_dict : dict):
     }
 
     '''
-    ground distances
+    actual ground distances
     (kin, k): 6.432
     (tr1, k): 14.048
     (mr1, tr1): 12.96
@@ -139,30 +138,31 @@ def solve_problem(initial_state_dict : dict):
     '''
 
     '''
-    (tl2, tl1): 32.06400000000001
-    (ml2, tl2): 15.391999999999996
-    (ml2, bl2): 15.391999999999996
-    (bl2, bl1): 30.208
-    (ml1, bl1): 15.328000000000003
-    (ml1, tl1): 15.424000000000007
-    (ml1, ml): 11.424000000000007
-    (ml2, ml): 11.328000000000003
-    (ml, tbl_tl): 11.391999999999996
-    (ml, tbl_bl): 11.551999999999992
-    (bl2, br1): 13.024000000000001
-    (mr1, br1): 15.199999999999989
-    (tr1, mr1): 15.488
-    (tr1, k): 15.232000000000028
-    (k, tr2): 14.336000000000013
-    (mr2, tr2): 15.424000000000035
-    (mr2, br2): 15.327999999999975
-    (br1, br2): 29.18399999999997
-    (mr2, mr): 11.423999999999978
-    (mr, tbl_tr): 11.456000000000017
-    (mr, tbl_br): 11.456000000000017
-    (mr1, mr): 11.391999999999939
-    (k, kin): 11.423999999999978
-    (ml2, mr1): 19.200000000000045
+    actual air distances
+    (tl2, tl1): 21.504
+    (ml2, tl2): 11.424000000000003
+    (ml2, bl2): 11.647999999999996
+    (bl2, bl1): 18.656000000000006
+    (ml1, bl1): 11.423999999999992
+    (ml1, tl1): 11.616
+    (ml1, ml): 7.743999999999986
+    (ml2, ml): 7.744
+    (tbl_tl, ml): 7.7120000000000175
+    (tbl_bl, ml): 7.711999999999989
+    (bl2, br1): 9.151999999999987
+    (mr1, br1): 11.424000000000007
+    (tr1, mr1): 11.647999999999996
+    (tr1, k): 10.304000000000002
+    (tr2, k): 9.120000000000005
+    (mr2, tr2): 11.391999999999996
+    (mr2, br2): 10.496000000000038
+    (br1, br2): 19.423999999999978
+    (mr, mr2): 7.711999999999989
+    (mr, tbl_tr): 7.711999999999989
+    (mr, tbl_br): 7.744000000000028
+    (mr, mr1): 7.7760000000000105
+    (k, kin): 7.520000000000039
+    (ml2, mr1): 14.271999999999991
     '''
     total_distances = defaultdict(int, Distances | {(loc2, loc1): dist for (loc1, loc2), dist in Distances.items()})
     for loc1, loc2 in product(locations, repeat=2):
@@ -359,7 +359,7 @@ def solve_problem(initial_state_dict : dict):
 
     go_home = DurativeAction('go_home', rob=Robot)
     rob = go_home.parameter('rob')
-    go_home.set_fixed_duration(2)
+    go_home.set_fixed_duration(9) # TODO: Decide on going home time
 
     go_home.add_condition(StartTiming(), Not(Stood_In(TL1)))
     go_home.add_condition(StartTiming(), IsAerial(rob))
@@ -379,6 +379,7 @@ def solve_problem(initial_state_dict : dict):
     for customer in customers+[fake_customer]:
         problem.set_initial_value(Seated_At(customer), fake_table)
 
+    problem.set_initial_value(Used(fake_order), True)
     problem.add_fluent(Stood_In, default_initial_value=False)
     problem.set_initial_value(At(host), TL1)  # Host starts at the entrance
     problem.set_initial_value(IsAerial(host), True)
@@ -424,8 +425,9 @@ def solve_problem(initial_state_dict : dict):
     problem.add_actions([pick_up_customers, seat_customers, clean_table, decide_order, take_order, make_food, take_food, serve_food, eat, move, go_home])
 
 
-    if initial_state_dict is not None:
-        parse_dict_to_problem(initial_state_dict, problem)
+    # if initial_state_dict is not None:
+    #     parse_dict_to_problem(initial_state_dict, problem)
+
     for cust in customers:
         problem.add_goal(Seated(cust))
         problem.add_goal(Order_Taken(cust))
@@ -642,6 +644,7 @@ def solve_problem(initial_state_dict : dict):
     #         compilation_result_2 = bounded_types_compiler.compile(compilation_result_1.problem)
 
     start_time = time.time()
+    action_sequence = []
     with Replanner(problem=problem, name="replanner[tamer]", params=planner_config) as replanner:
         result = replanner.resolve(problem)
         plan = result.plan
@@ -652,11 +655,15 @@ def solve_problem(initial_state_dict : dict):
             for start, action, duration in plan.timed_actions:
                 if duration != None:
                     print(f"{float(start)}: {action} [{float(duration)}]")
+                    action_sequence.append({'action': action, 'start': float(start), 'duration': float(duration), 'is_instantaneous': 0})
                     # start_t, end_t = _extract_action_timings(action.action, start=start, duration=duration)
                     # print(_get_timepoint_effects(action.action, start=start_t, timing=end_t, duration=duration))
                 else:
                     print(f"{float(start)}: {action}")
+                    action_sequence.append({'action': action, 'start': float(start), 'is_instantaneous': 1})
 
+            
+            bias = action_sequence[-1]['start'] if action_sequence[-1]['is_instantaneous'] else action_sequence[-1]['start'] + action_sequence[-1]['duration']
 
             temporal_simulator = TemporalSimulator(problem, replanner)
             state, problem, replanner = temporal_simulator.simulate(plan.timed_actions)
@@ -665,10 +672,12 @@ def solve_problem(initial_state_dict : dict):
             # replanner.add_goal(Clean(table_bl))
             cur_table = state(Seated_At(customers[0])) # table_bl
             table_loc = state(Table_At(cur_table))
+
             print(f"Table location: {table_loc}")
             replanner.add_goal(Eaten(customers[0]))
             replanner.add_goal(Equals(At(cleaner), table_loc))
-            replanner.add_goal(Clean(table_bl))
+            replanner.add_goal(Clean(cur_table))
+            # replanner.add_goal(Holds(server_1))
 
             new_result = replanner.resolve()
             new_plan = new_result.plan
@@ -676,9 +685,11 @@ def solve_problem(initial_state_dict : dict):
                 print(f"{replanner.name} returned:")
                 for start, action, duration in new_plan.timed_actions:
                     if duration != None:
-                        print(f"{float(start)}: {action} [{float(duration)}]")
+                        print(f"{float(bias+start)}: {action} [{float(duration)}]")
+                        action_sequence.append({'action': action, 'start': float(bias+start), 'duration': float(duration), 'is_instantaneous': 0})
                     else:
-                        print(f"{float(start)}: {action}")
+                        print(f"{float(bias+start)}: {action}")
+                        action_sequence.append({'action': action, 'start': float(bias+start), 'is_instantaneous': 1})
 
             else:
                 print(f"{replanner.name} failed to find a plan")
@@ -687,7 +698,13 @@ def solve_problem(initial_state_dict : dict):
             print(f"{replanner.name} failed to find a plan")  
 
     print(f"Time taken: {time.time() - start_time}")
+    action_sequence = sorted(action_sequence, key=lambda x: (x['start'], -x['is_instantaneous']))
+    for action in action_sequence:
+        print(action['start'], action['action'])
+
     print("Done")
+
+    return action_sequence
 
     def parse_dict_to_problem(initial_state_dict, problem):
         '''
@@ -696,6 +713,7 @@ def solve_problem(initial_state_dict : dict):
         - cleaer_cur_loc: cleaner current location
         - host_cur_loc: host current location
         - g_following: group following the host
+        - holds : order_id
         - orders: orders status of the form {order_id: {customer_id, table_id, profit, prep_time}}
         - cust_out: list of customers that are outsid of the restaurant
         - cust_in: customers iniside status of the form {customer_id: {table_id, seated, ready_to_order, order_taken, served, eaten, party_size}}
@@ -727,6 +745,7 @@ def solve_problem(initial_state_dict : dict):
             problem.set_initial_value(Occupied(tables[table_id]), table['occupied'])
             problem.set_initial_value(Clean(tables[table_id]), table['clean'])
         problem.set_initial_value(Revenue, initial_state_dict['revenue'])
+        problem.set_initial_value(Holds(server_1), initial_state_dict['holds'])
         
 
 

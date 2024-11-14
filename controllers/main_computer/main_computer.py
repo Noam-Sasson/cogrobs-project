@@ -10,11 +10,12 @@ sys.path.append(libraries_path)
 
 from controller import Robot, Emitter, Receiver
 from classes_and_constans import RED, GREEN, BLUE, ORANGE, NOCOLOR, WAITER_CHANNEL, CLEANER_CHANNEL, DRONE_CHANNEL, NODES_CHANNEL, WORLD_GENERATOR_CHANNEL, PEDESTRIAN_CHANNEL, CPU_CHANNEL
-from classes_and_constans import Location, Edge, GraphNode, Entity, Graph, FOOD_ITEMS, EXPECTED_PREP_TIME
+from classes_and_constans import Location, Edge, GraphNode, Entity, Graph, FOOD_ITEMS, RATE_OF_PREP_TIME
 from classes_and_constans import get_graph
 import math
 import ast
 
+from planner import solve_problem
 import time
 
 from collections.abc import Sequence, Mapping
@@ -222,22 +223,35 @@ class worldState:
     PLATTER_TO_BE_PLATED, PLATTER_WITH_FOOD = range(2) # kitchen states
     FOOD_ITEMS = FOOD_ITEMS
     MAX_MASSAGES = 10
+    ORDER0 = "order0"
+    ORDER1 = "order1"
 
     # a class to stores the state of the world (maybe even updates it)
-    def __init__(self, receiver, timestep=64, available_kitchen_space=2):
+    def __init__(self, robot, receiver, timestep=64, available_kitchen_space=2):
         self.receiver = receiver
         self.groups_states = dict()
         self.tables_states = {"tbl_tl": self.CLEAR, "tbl_bl": self.CLEAR, "tbl_tr": self.CLEAR, "tbl_br": self.CLEAR}
         self.groups_to_tables = dict()
         self.kitchen_state = dict()
         self.orders = dict() # all orders that ever been made - {order_id: {customer_id, table_id, profit, prep_time}}
+        self.current_orders = {self.ORDER0:{'used': False, 'owner': None, 'is_ready': False, 'food':0},
+                               self.ORDER1:{'used': False, 'owner': None, 'is_ready': False, 'food':0}} # current orders - {order_id: {customer_id, table_id, profit, prep_time}}
         self.total_profit = 0
         self.available_kitchen_space = available_kitchen_space
         self.world_generator = worldGeneratorcommnads(robot, WORLD_GENERATOR_CHANNEL, timestep, self)
 
+        self.owner_to_order = dict()
         self.drone = {"position": None, "carries": None}
         self.waiter = {"position": None, "carries": None}
         self.cleaner = {"position": None}
+
+        self.planner_timer = 0
+        self.current_plan_idx = 0
+        self.current_actions_sequence = []
+
+        self.waiter_command_handler = waiterCommnads(robot, WAITER_CHANNEL, timestep, self)
+        self.drone_command_handler = droneCommnads(robot, DRONE_CHANNEL, timestep, self)
+        self.cleaner_command_handler = cleanerCommnads(robot, CLEANER_CHANNEL, timestep, self)
 
     def listen_to_entities(self, receiver):
         # print("CPU: Listening to entities")
@@ -256,6 +270,7 @@ class worldState:
                     
                     if message[1] == "food_ready":
                         group = message[2]
+                        self.current_orders[self.owner_to_order[group]]['is_ready'] = True
                         print(f"CPU: Group {group} food is ready")
                         self.kitchen_state[group] = self.PLATTER_WITH_FOOD
                     
@@ -302,10 +317,12 @@ class worldState:
                     if message[1] == "order_taken":
                         group = message[2]
                         order = message[3:]
-                        self.orders[group] = {'customer':order, 'table':self.groups_to_tables[group], 'profit': sum([self.FOOD_ITEMS[f] for f in order]), 'prep_time': len(order)*EXPECTED_PREP_TIME}
+                        self.orders[group] = {'customer':group, 'table':self.groups_to_tables[group], 'profit': sum([self.FOOD_ITEMS[f] for f in order]), 'prep_time': len(order)*RATE_OF_PREP_TIME}
                         table = self.groups_to_tables[group]
                         self.tables_states[table] = self.WAITING_FOR_FOOD
                         self.groups_states[group]['order_taken'] = True
+
+                        self.current_orders[self.owner_to_order[group]]['food'] = self.orders[group]['profit']
                         print(f"CPU: Group {group} ordered {order}")
                         self.world_generator.kitchen_make_food(group, order) # check if order reaches kitchen
                         print(f"CPU: Group {group} order sent to kitchen")
@@ -345,7 +362,7 @@ class worldState:
             "cleaner": self.cleaner
         }
 
-    def handle_planning(self):
+    def send_for_planning(self):
         '''
         initial_state_dict should countain the following:
         - server_1_cur_loc: server_1 current location
@@ -363,17 +380,64 @@ class worldState:
             print("CPU: No planning needed")
             return
         
-        intitail_state_dict = dict()
-        intitail_state_dict["server_1_cur_loc"] = self.waiter["position"]
-        intitail_state_dict["cleaer_cur_loc"] = self.cleaner["position"]
-        intitail_state_dict["host_cur_loc"] = self.drone["position"]
-        intitail_state_dict["g_following"] = self.drone["carries"]
-        intitail_state_dict["orders"] = self.orders
-        intitail_state_dict["cust_out"] = [k for k, v in self.groups_states.items() if v['status'] == self.GROUP_OUTSIDE and not v['eaten']] # groups that are outside and not eaten
-        intitail_state_dict["cust_in"] = {k: v for k, v in self.groups_states.items() if v['status'] != self.GROUP_OUTSIDE} # groups that are inside
-        intitail_state_dict["tables"] = self.tables_states # modify self.tables_states
-        intitail_state_dict["revenue"] = self.total_profit
+        initial_state_dict = dict()
+        initial_state_dict["server_1_cur_loc"] = self.waiter["position"]
+        initial_state_dict["cleaer_cur_loc"] = self.cleaner["position"]
+        initial_state_dict["host_cur_loc"] = self.drone["position"]
+        initial_state_dict["g_following"] = self.drone["carries"]
+        initial_state_dict["orders"] = self.orders
+        initial_state_dict["cust_out"] = [k for k, v in self.groups_states.items() if v['status'] == self.GROUP_OUTSIDE and not v['eaten']] # groups that are outside and not eaten
+        initial_state_dict["cust_in"] = {k: v for k, v in self.groups_states.items() if v['status'] != self.GROUP_OUTSIDE} # groups that are inside
+        initial_state_dict["tables"] = self.tables_states # modify self.tables_states
+        initial_state_dict["revenue"] = self.total_profit
 
+        self.current_actions_sequence = solve_problem(initial_state_dict)
+
+    def follow_planning(self):
+        '''
+        actions_sequence: [{action: a, start: s, duration:d}]
+        '''
+
+        if self.current_actions_sequence[self.current_plan_idx] >= self.planner_timer:
+            pass
+    
+    def execut_plan(self, action):
+        action_tup = str(action)[:-1].split("(")
+        action_name = action_tup[0]
+        action_args = action_tup[1].split(", ")
+        if action_name == "move":
+            entity = action_args[0]
+            location_from = action_args[1]
+            location_to = action_args[2]
+            match entity:
+                case "server_1":
+                    self.waiter_command_handler.go_to(location_to)
+                case "cleaner":
+                    self.cleaner_command_handler.go_to(location_to)
+                case "host":
+                    self.drone_command_handler.go_to(location_to)
+                case default:
+                    print("CPU: Invalid entity")
+        if action_name == "take_order":
+            entity = action_args[0]
+            group = action_args[1]
+            table = action_args[2]
+            order_slot = action_args[3]
+            self.current_orders[order_slot]['used'] = True
+            self.current_orders[order_slot]['owner'] = group
+            self.current_orders[order_slot]['is_ready'] = False
+            self.owner_to_order[group] = order_slot
+            self.waiter_command_handler.take_order(group)
+        if action_name == "take_food":
+            entity = action_args[0]
+            group = action_args[1]
+            self.waiter_command_handler.pick_up_food(group)
+        if action_name == "serve_food":
+            entity = action_args[0]
+            group = action_args[1]
+            self.waiter_command_handler.deliver_food(group)
+             
+            
 def run_robot(robot):
     # get the time step of the current world.
     timestep = 64
@@ -382,15 +446,12 @@ def run_robot(robot):
     emitter = robot.getDevice('emitter')
     receiver = robot.getDevice('receiver')
     receiver.enable(timestep)
-    world_state = worldState(receiver, timestep)
+    world_state = worldState(robot, receiver, timestep)
 
     world_state.drone["position"] = "tl_1"
     world_state.waiter["position"] = "k_in"
     world_state.cleaner["position"] = "mr"
 
-    drone_command_handler = droneCommnads(robot, DRONE_CHANNEL, timestep, world_state)
-    waiter_command_handler = waiterCommnads(robot, WAITER_CHANNEL, timestep, world_state)
-    cleaner_command_handler = cleanerCommnads(robot, CLEANER_CHANNEL, timestep, world_state)
     # define channels for communication
 
     while robot.step(timestep) != -1:
@@ -410,6 +471,8 @@ def run_robot(robot):
         if verified_entities_got_positions:
             world_state.listen_to_entities(receiver)
             break
+
+        # here update the world state.planner_timer
     
     print("CPU: Ready to start the simulation")
 
@@ -503,7 +566,7 @@ def run_robot(robot):
     # waiter_command_handler.go_to("tbl_tr")
     # waiter_command_handler.go_to("mr")
     # waiter_command_handler.go_to("tbl_br")
-    explore_nodes_weights_with_dfs(graph, "tl_1", drone_command_handler.go_to, robot, timestep, world_state, receiver, world_state.drone)
+    explore_nodes_weights_with_dfs(graph, "tl_1", world_state.drone_command_handler.go_to, robot, timestep, world_state, receiver, world_state.drone)
 
     while robot.step(timestep) != -1:
         world_state.listen_to_entities(receiver)
@@ -555,6 +618,7 @@ def explore_nodes_weights_with_dfs(graph, node_name, go_to_func, robot, timestep
 
     return edges
 
+    
 
 
     
