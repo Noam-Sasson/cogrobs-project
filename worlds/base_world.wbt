@@ -1320,7 +1320,7 @@ Robot {
           name "antena"
         }
       ]
-      channel 4
+      channel 3
       allowedChannels [
         6, 5, 4, 3, 2
       ]

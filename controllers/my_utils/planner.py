@@ -9,10 +9,22 @@ from itertools import product
 import time
 from unified_planning.plans.time_triggered_plan import _get_timepoint_effects, _extract_action_timings, _get_timepoint_simulated_effects
 
-CUST_COUNT = 2
 
-def solve_problem():
+def solve_problem(initial_state_dict : dict):
+    '''
+    initial_state_dict should countain the following:
+    - server_1_cur_loc: server_1 current location
+    - cleaer_cur_loc: cleaner current location
+    - host_cur_loc: host current location
+    - g_following: group following the host
+    - orders: orders status of the form {order_id: {customer_id, table_id}}
+    - cust_out: list of customers that are outsid of the restaurant
+    - cust_in: customers iniside status of the form {customer_id: {table_id, seated, ready_to_order, order_taken, served, eaten, party_size}}
+    - tables: tables status of the form {table_id: {occupied, clean}}
+    - revenue: current revenue
+    '''
     # Create the planning problem
+    CUST_COUNT = 2
     problem = Problem("DinerProblem")
 
     # Define types of objects (Table, Robot, Customer)
@@ -72,31 +84,86 @@ def solve_problem():
                       location2=Location)  # location1 is adjacent to location2
     Distance = Fluent("Distance", IntType(), location1=Location, location2=Location)
     Distances = {
-        (kitchen, K): 1,
-        (K, TR1): 1,
-        (K, TR2): 1,
-        (TL2, TL1): 1,
-        (TL1, ML1): 1,
-        (ML1, BL1): 1,
-        (BL1, BL2): 1,
-        (BL2, ML2): 1,
-        (ML2, TL2): 1,
-        (ML, ML1): 1,
-        (ML, ML2): 1,
-        (ML, TBL_TL): 1,
-        (ML, TBL_BL): 1,
-        (TR1, MR1): 1,
-        (MR1, BR1): 1,
-        (BR1, BR2): 1,
-        (BR2, MR2): 1,
-        (MR2, TR2): 1,
-        (MR, MR1): 1,
-        (MR, MR2): 1,
-        (MR, TBL_TR): 1,
-        (MR, TBL_BR): 1,
-        (ML2, MR1): 1,
-        (BL2, BR1): 1
+        (kitchen, K): 6,
+        (K, TR1): 14,
+        (K, TR2): 13,
+        (TL2, TL1): 22,
+        (TL1, ML1): 12,
+        (ML1, BL1): 12,
+        (BL1, BL2): 22,
+        (BL2, ML2): 13,
+        (ML2, TL2): 12,
+        (ML, ML1): 7,
+        (ML, ML2): 8,
+        (ML, TBL_TL): 7,
+        (ML, TBL_BL): 6,
+        (TR1, MR1): 13,
+        (MR1, BR1): 13,
+        (BR1, BR2): 22,
+        (BR2, MR2): 12,
+        (MR2, TR2): 13,
+        (MR, MR1): 7,
+        (MR, MR2): 7,
+        (MR, TBL_TR): 7,
+        (MR, TBL_BR): 7,
+        (ML2, MR1): 13,
+        (BL2, BR1): 9,
     }
+
+    '''
+    ground distances
+    (kin, k): 6.432
+    (tr1, k): 14.048
+    (mr1, tr1): 12.96
+    (mr1, br1): 12.928000000000004
+    (br1, br2): 21.823999999999998
+    (mr2, br2): 11.807999999999993
+    (mr2, mr): 7.199999999999989
+    (tbl_tr, mr): 7.007999999999981
+    (mr, tbl_br): 6.463999999999999
+    (mr1, mr): 6.8799999999999955
+    (tr2, mr2): 12.73599999999999
+    (tr2, k): 12.960000000000008
+    (br1, bl2): 9.343999999999994
+    (bl1, bl2): 21.47200000000001
+    (bl1, ml1): 11.935999999999979
+    (tl1, ml1): 12.127999999999986
+    (tl1, tl2): 22.144000000000005
+    (ml2, tl2): 12.127999999999986
+    (ml2, bl2): 12.543999999999983
+    (ml2, ml): 7.584000000000003
+    (tbl_tl, ml): 6.7520000000000095
+    (tbl_bl, ml): 6.271999999999991
+    (ml1, ml): 7.039999999999964
+    (mr1, ml2): 13.343999999999994
+    '''
+
+    '''
+    (tl2, tl1): 32.06400000000001
+    (ml2, tl2): 15.391999999999996
+    (ml2, bl2): 15.391999999999996
+    (bl2, bl1): 30.208
+    (ml1, bl1): 15.328000000000003
+    (ml1, tl1): 15.424000000000007
+    (ml1, ml): 11.424000000000007
+    (ml2, ml): 11.328000000000003
+    (ml, tbl_tl): 11.391999999999996
+    (ml, tbl_bl): 11.551999999999992
+    (bl2, br1): 13.024000000000001
+    (mr1, br1): 15.199999999999989
+    (tr1, mr1): 15.488
+    (tr1, k): 15.232000000000028
+    (k, tr2): 14.336000000000013
+    (mr2, tr2): 15.424000000000035
+    (mr2, br2): 15.327999999999975
+    (br1, br2): 29.18399999999997
+    (mr2, mr): 11.423999999999978
+    (mr, tbl_tr): 11.456000000000017
+    (mr, tbl_br): 11.456000000000017
+    (mr1, mr): 11.391999999999939
+    (k, kin): 11.423999999999978
+    (ml2, mr1): 19.200000000000045
+    '''
     total_distances = defaultdict(int, Distances | {(loc2, loc1): dist for (loc1, loc2), dist in Distances.items()})
     for loc1, loc2 in product(locations, repeat=2):
         problem.set_initial_value(Distance(loc1, loc2), total_distances[(loc1, loc2)])
@@ -109,6 +176,7 @@ def solve_problem():
             problem.set_initial_value(Adjacent(loc2, loc1), False)
 
     Job = Fluent('Job', IntType(), robot=Robot)
+    IsAerial = Fluent('IsAerial', BoolType(), robot=Robot)
     HOST, SERVER, CLEANER = 0, 1, 2
     # Fluents
     At = Fluent('At', Location, robot=Robot)
@@ -137,6 +205,7 @@ def solve_problem():
     Used = Fluent('Used', BoolType(), order=Order)
     Owner = Fluent('Owner', Customer, order=Order)
     Food = Fluent('Food', IntType(), order=Order)
+    Food_Prep_Time = Fluent('Food_Prep_Time', IntType(), order=Order)
     Done = Fluent('Done', BoolType(), order=Order)
 
     Stood_In = Fluent('Stood_In', BoolType(), location=Location)
@@ -226,7 +295,7 @@ def solve_problem():
     PREP_TIME = 2  # TODO: Decide on Prepping time
 
     order = make_food.parameter('order')
-    make_food.set_fixed_duration(total_time := 2)#Times(Party_Size(Owner(order)), PREP_TIME))
+    make_food.set_fixed_duration(total_time := Food_Prep_Time(order))#Times(Party_Size(Owner(order)), PREP_TIME))
 
     make_food.add_condition(StartTiming(), Used(order))
     make_food.add_condition(StartTiming(), Not(Done(order)))
@@ -288,17 +357,31 @@ def solve_problem():
     move.add_effect(EndTiming(), At(rob), loc2)
     move.add_effect(EndTiming(), Stood_In(loc2), True)
 
+    go_home = DurativeAction('go_home', rob=Robot)
+    rob = go_home.parameter('rob')
+    go_home.set_fixed_duration(2)
+
+    go_home.add_condition(StartTiming(), Not(Stood_In(TL1)))
+    go_home.add_condition(StartTiming(), IsAerial(rob))
+    go_home.add_condition(StartTiming(), Not(Seating_Customers(rob)))
+
+    go_home.add_effect(StartTiming(), Stood_In(TL1), False)
+    go_home.add_effect(EndTiming(), At(rob), TL1)
+    go_home.add_effect(EndTiming(), Stood_In(TL1), True)
+
     # Initial state
-    problem.add_fluents([At, Table_At, Job, Adjacent, Owner, Serves, Seated_At])
+    problem.add_fluents([At, Table_At, Job, Adjacent, Owner, Serves, Seated_At, IsAerial])
     for order in orders+[fake_order]:
         problem.set_initial_value(Owner(order), fake_customer)
     for rob in robots:
         problem.set_initial_value(Serves(rob), fake_order)
+        problem.set_initial_value(IsAerial(rob), False)
     for customer in customers+[fake_customer]:
         problem.set_initial_value(Seated_At(customer), fake_table)
 
     problem.add_fluent(Stood_In, default_initial_value=False)
     problem.set_initial_value(At(host), TL1)  # Host starts at the entrance
+    problem.set_initial_value(IsAerial(host), True)
     problem.set_initial_value(Stood_In(TL1), True)
     problem.set_initial_value(At(server_1), K)  # Server starts at k
     # problem.set_initial_value(At(server_2), BL2)  # Server starts at k
@@ -334,14 +417,19 @@ def solve_problem():
     problem.add_fluent(Food, default_initial_value=0)
     problem.add_fluent(Distance, default_initial_value=0)
     problem.add_fluent(Holds, default_initial_value=False)
+    problem.add_fluent(Food_Prep_Time, default_initial_value=2)
 
     problem.add_objects([fake_customer, fake_order, fake_table])
 
-    problem.add_actions([pick_up_customers, seat_customers, clean_table, decide_order, take_order, make_food, take_food, serve_food, eat, move])
+    problem.add_actions([pick_up_customers, seat_customers, clean_table, decide_order, take_order, make_food, take_food, serve_food, eat, move, go_home])
 
-    problem.add_goal(Seated(customers[0]))
-    problem.add_goal(Order_Taken(customers[0]))
-    problem.add_goal(Holds(server_1))
+
+    if initial_state_dict is not None:
+        parse_dict_to_problem(initial_state_dict, problem)
+    for cust in customers:
+        problem.add_goal(Seated(cust))
+        problem.add_goal(Order_Taken(cust))
+    # problem.add_goal(Holds(server_1))
 
     # MaximizeExpressionOnFinalState(Revenue)
 
@@ -396,10 +484,11 @@ def solve_problem():
             if isinstance(action.action, InstantaneousAction):
                 effect = action.action.effects
 
-            # print(effect)
-            # print(parameters)
+            
 
             parameters = action.actual_parameters
+            # print(effect)
+            # print(parameters)
             params_to_actual_params = dict()
             for param, ac_param in zip(action.action.parameters, action.actual_parameters):
                 # print(param.name, ac_param)s
@@ -413,7 +502,7 @@ def solve_problem():
                 # print(type(fluent.args[0]))
                 # print(str(fluent.args[0]))
                 # print(type(fluent.args[0].parameter().name))
-                cur_params = tuple([params_to_actual_params[arg.parameter().name] for arg in fluent.args])
+                cur_params = tuple([params_to_actual_params[arg.parameter().name] if arg.is_parameter_exp() else arg for arg in fluent.args])
                 # print(cur_params)
                 
                 if not value.is_constant():
@@ -431,7 +520,6 @@ def solve_problem():
                 self.problem.set_initial_value(fluent.fluent()(*cur_params), value)
                 self.replanner.update_initial_value(fluent.fluent()(*cur_params), value)
             
-
         def apply_start_effects(self, action):
             # implemnt using update_initial_value
             # print(action, type(action))
@@ -552,6 +640,8 @@ def solve_problem():
     #     compilation_result_1 = compiler.compile(grounded_problem)
     #     with Compiler(problem_kind=compilation_result_1.problem.kind, compilation_kind=CompilationKind.GROUNDING) as bounded_types_compiler:
     #         compilation_result_2 = bounded_types_compiler.compile(compilation_result_1.problem)
+
+    start_time = time.time()
     with Replanner(problem=problem, name="replanner[tamer]", params=planner_config) as replanner:
         result = replanner.resolve(problem)
         plan = result.plan
@@ -596,12 +686,50 @@ def solve_problem():
         else:
             print(f"{replanner.name} failed to find a plan")  
 
+    print(f"Time taken: {time.time() - start_time}")
     print("Done")
 
+    def parse_dict_to_problem(initial_state_dict, problem):
+        '''
+        initial_state_dict should countain the following:
+        - server_1_cur_loc: server_1 current location
+        - cleaer_cur_loc: cleaner current location
+        - host_cur_loc: host current location
+        - g_following: group following the host
+        - orders: orders status of the form {order_id: {customer_id, table_id, profit, prep_time}}
+        - cust_out: list of customers that are outsid of the restaurant
+        - cust_in: customers iniside status of the form {customer_id: {table_id, seated, ready_to_order, order_taken, served, eaten, party_size}}
+        - tables: tables status of the form {table_id: {occupied, clean}}
+        - revenue: current revenue
+        '''
+
+        # holds and tables and more need to be added
+
+        problem.set_initial_value(At(server_1), initial_state_dict['server_1_cur_loc'])
+        problem.set_initial_value(At(cleaner), initial_state_dict['cleaner_cur_loc'])
+        problem.set_initial_value(At(host), initial_state_dict['host_cur_loc'])
+        # set other groups not following the host
+        problem.set_initial_value(Following(host, initial_state_dict['g_following']), True)
+        for order_id, order in initial_state_dict['orders'].items():
+            problem.set_initial_value(Owner(orders[order_id]), customers[order['customer_id']])
+            problem.set_initial_value(Seated_At(customers[order['customer_id']]), tables[order['table_id']])
+            problem.set_initial_value(Used(orders[order_id]), True)
+            problem.set_initial_value(Food(orders[order_id]), order['profit'])
+            problem.set_initial_value(Food_Prep_Time(orders[order_id]), order['prep_time'])
+        for customer_id, customer in initial_state_dict['cust_in'].items():
+            problem.set_initial_value(Seated(customers[customer_id]), customer['seated'])
+            problem.set_initial_value(Ready_To_Order(customers[customer_id]), customer['ready_to_order'])
+            problem.set_initial_value(Order_Taken(customers[customer_id]), customer['order_taken'])
+            problem.set_initial_value(Served(customers[customer_id]), customer['served'])
+            problem.set_initial_value(Eaten(customers[customer_id]), customer['eaten'])
+            problem.set_initial_value(Party_Size(customers[customer_id]), customer['party_size'])
+        for table_id, table in initial_state_dict['tables'].items():
+            problem.set_initial_value(Occupied(tables[table_id]), table['occupied'])
+            problem.set_initial_value(Clean(tables[table_id]), table['clean'])
+        problem.set_initial_value(Revenue, initial_state_dict['revenue'])
+        
 
 
-
+    
 if __name__ == '__main__':
-    solve_problem()
-
-
+    solve_problem(None)

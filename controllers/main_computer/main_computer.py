@@ -10,10 +10,12 @@ sys.path.append(libraries_path)
 
 from controller import Robot, Emitter, Receiver
 from classes_and_constans import RED, GREEN, BLUE, ORANGE, NOCOLOR, WAITER_CHANNEL, CLEANER_CHANNEL, DRONE_CHANNEL, NODES_CHANNEL, WORLD_GENERATOR_CHANNEL, PEDESTRIAN_CHANNEL, CPU_CHANNEL
-from classes_and_constans import Location, Edge, GraphNode, Entity, Graph, FOOD_ITEMS
+from classes_and_constans import Location, Edge, GraphNode, Entity, Graph, FOOD_ITEMS, EXPECTED_PREP_TIME
 from classes_and_constans import get_graph
 import math
 import ast
+
+import time
 
 from collections.abc import Sequence, Mapping
 
@@ -228,7 +230,7 @@ class worldState:
         self.tables_states = {"tbl_tl": self.CLEAR, "tbl_bl": self.CLEAR, "tbl_tr": self.CLEAR, "tbl_br": self.CLEAR}
         self.groups_to_tables = dict()
         self.kitchen_state = dict()
-        self.orders = dict() # all orders that ever been made
+        self.orders = dict() # all orders that ever been made - {order_id: {customer_id, table_id, profit, prep_time}}
         self.total_profit = 0
         self.available_kitchen_space = available_kitchen_space
         self.world_generator = worldGeneratorcommnads(robot, WORLD_GENERATOR_CHANNEL, timestep, self)
@@ -249,7 +251,8 @@ class worldState:
                     if message[1] == "group_arrived":
                         group, group_size = message[2:]
                         print(f"CPU: Group {group} arrived with {group_size} members")
-                        self.groups_states[group] = self.GROUP_OUTSIDE
+                        # {customer_id: {table_id, seated, ready_to_order, order_taken, served, eaten, party_size}}
+                        self.groups_states[group] = {'status': self.GROUP_OUTSIDE, 'table': None, 'seated': False, 'ready_to_order': False, 'order_taken': False, 'served': False, 'eaten': False, 'party_size': group_size}
                     
                     if message[1] == "food_ready":
                         group = message[2]
@@ -261,13 +264,15 @@ class worldState:
                         group = message[2]
                         table = message[3]
                         self.tables_states[table] = self.READY_TO_ORDER
+                        self.groups_states[group]['ready_to_order'] = True
                         print(f"CPU: Group {group} is ready to order at table {table}")
                     if message[1] == "finish_eating":
                         group = message[2]
                         table = self.groups_to_tables[group]
                         self.tables_states[table] = self.NEED_CLEANING
-                        self.groups_states[group] = self.GROUP_OUTSIDE
-                        self.total_profit += sum([self.FOOD_ITEMS[f] for f in self.orders[group]])
+                        self.groups_states[group]['eaten'] = True
+                        self.groups_states[group]['status'] = self.GROUP_OUTSIDE
+                        self.total_profit += self.orders[group]["profit"]
                         print(f"CPU: Group {group} finished eating at table {table}")
                         print(f"CPU: Total profit: {self.total_profit}")
 
@@ -281,10 +286,13 @@ class worldState:
                         table = message[3]
                         self.tables_states[table] = self.WAITING_TO_ORDER
                         self.groups_to_tables[group] = table
+                        self.groups_states[group]['table'] = table
+                        self.groups_states[group]['seated'] = True
                         print(f"CPU: Group {group} dropped at table {table}")
                     if message[1] == "group_picked":
                         group = message[2]
                         self.drone["carries"] = group
+                        self.groups_states[group]['status'] = self.GROUP_INSIDE
                         print(f"CPU: Group {group} picked by drone")
 
                 if message[0] == WAITER_CHANNEL:
@@ -294,9 +302,10 @@ class worldState:
                     if message[1] == "order_taken":
                         group = message[2]
                         order = message[3:]
-                        self.orders[group] = order
+                        self.orders[group] = {'customer':order, 'table':self.groups_to_tables[group], 'profit': sum([self.FOOD_ITEMS[f] for f in order]), 'prep_time': len(order)*EXPECTED_PREP_TIME}
                         table = self.groups_to_tables[group]
                         self.tables_states[table] = self.WAITING_FOR_FOOD
+                        self.groups_states[group]['order_taken'] = True
                         print(f"CPU: Group {group} ordered {order}")
                         self.world_generator.kitchen_make_food(group, order) # check if order reaches kitchen
                         print(f"CPU: Group {group} order sent to kitchen")
@@ -308,6 +317,7 @@ class worldState:
                         group = message[2]
                         table = self.groups_to_tables[group]
                         self.tables_states[table] = self.EATING
+                        self.groups_states[group]['served'] = True
 
                 if message[0] == CLEANER_CHANNEL:
                     if message[1] == "reached_node":
@@ -320,6 +330,49 @@ class worldState:
                         print(f"CPU: Table {table} cleaned")                         
             
             receiver.nextPacket()
+
+    def get_world_state_dict(self):
+        return {
+            "groups_states": self.groups_states,
+            "tables_states": self.tables_states,
+            "groups_to_tables": self.groups_to_tables,
+            "kitchen_state": self.kitchen_state,
+            "orders": self.orders,
+            "total_profit": self.total_profit,
+            "available_kitchen_space": self.available_kitchen_space,
+            "drone": self.drone,
+            "waiter": self.waiter,
+            "cleaner": self.cleaner
+        }
+
+    def handle_planning(self):
+        '''
+        initial_state_dict should countain the following:
+        - server_1_cur_loc: server_1 current location
+        - cleaer_cur_loc: cleaner current location
+        - host_cur_loc: host current location
+        - g_following: group following the host
+        - orders: orders status of the form {order_id: {customer_id, table_id, profit, prep_time}}
+        - cust_out: list of customers that are outsid of the restaurant
+        - cust_in: customers iniside status of the form {customer_id: {table_id, seated, ready_to_order, order_taken, served, eaten, party_size}}
+        - tables: tables status of the form {table_id: {occupied, clean}}
+        - revenue: current revenue
+        '''
+
+        if len(self.groups_states) == 0:
+            print("CPU: No planning needed")
+            return
+        
+        intitail_state_dict = dict()
+        intitail_state_dict["server_1_cur_loc"] = self.waiter["position"]
+        intitail_state_dict["cleaer_cur_loc"] = self.cleaner["position"]
+        intitail_state_dict["host_cur_loc"] = self.drone["position"]
+        intitail_state_dict["g_following"] = self.drone["carries"]
+        intitail_state_dict["orders"] = self.orders
+        intitail_state_dict["cust_out"] = [k for k, v in self.groups_states.items() if v['status'] == self.GROUP_OUTSIDE and not v['eaten']] # groups that are outside and not eaten
+        intitail_state_dict["cust_in"] = {k: v for k, v in self.groups_states.items() if v['status'] != self.GROUP_OUTSIDE} # groups that are inside
+        intitail_state_dict["tables"] = self.tables_states # modify self.tables_states
+        intitail_state_dict["revenue"] = self.total_profit
 
 def run_robot(robot):
     # get the time step of the current world.
@@ -450,24 +503,59 @@ def run_robot(robot):
     # waiter_command_handler.go_to("tbl_tr")
     # waiter_command_handler.go_to("mr")
     # waiter_command_handler.go_to("tbl_br")
-
+    explore_nodes_weights_with_dfs(graph, "tl_1", drone_command_handler.go_to, robot, timestep, world_state, receiver, world_state.drone)
 
     while robot.step(timestep) != -1:
         world_state.listen_to_entities(receiver)
 
-def explore_nodes_weights_with_dfs(graph, node_name, visited, weights):
-    visited = dict()
-    for node in graph.get_nodes():
-        visited[node] = False
-    
-    stack = [node_name]
-    while stack:
-        current_node = stack.pop()
-        if not visited[current_node]:
-            visited[current_node] = True
-            print(f"Node: {current_node}, weight: {weights[current_node]}")
-            for neighbor in graph.get_nodes()[current_node].neighbors:
-                stack.append(neighbor)
+def explore_nodes_weights_with_dfs(graph, node_name, go_to_func, robot, timestep, world_state, receiver, entity):
+    """
+    Explores all edges of a graph starting from the given node.
+
+    :param graph: A dictionary representing the graph where keys are node names and values are lists of adjacent nodes.
+    :param start_node: The starting node for the exploration.
+    :return: A list of edges explored.
+    """
+    visited = set()
+    edges = []
+    node = graph.get_node(node_name)
+    edges_weights = []
+    def dfs(node):
+        visited.add(node)
+        for neighbor in graph.get_node(node.name).neighbours:
+            edge = {node, neighbor}
+            if edge not in edges:
+                edges.append(edge)
+                # calculate weight
+                start_time = robot.getTime()
+                go_to_func(neighbor.name)
+                while robot.step(timestep) != -1 and entity["position"] != neighbor.name:
+                    world_state.listen_to_entities(receiver)
+                go_to_func(node.name)
+                while robot.step(timestep) != -1 and entity["position"] != node.name:
+                    world_state.listen_to_entities(receiver)
+                end_time = robot.getTime()
+                weight = (end_time - start_time)/2
+                print(f"CPU: Weight between {node.name} and {neighbor.name} is {weight}")
+                edges_weights.append((edge, weight))
+            if neighbor not in visited:
+                go_to_func(neighbor.name)
+                while robot.step(timestep) != -1 and entity["position"] != neighbor.name:
+                    world_state.listen_to_entities(receiver)
+                dfs(neighbor)
+                go_to_func(node.name)
+                while robot.step(timestep) != -1 and entity["position"] != node.name:
+                    world_state.listen_to_entities(receiver)
+
+    dfs(node)
+
+    for tup in edges_weights:
+        e = list(tup[0])
+        print(f'{(e[0].name, e[1].name)}: {tup[1]}')
+
+    return edges
+
+
 
     
 

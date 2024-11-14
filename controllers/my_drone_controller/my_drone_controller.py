@@ -296,10 +296,33 @@ class HandleCommands:
                 return
 
     def go_to(self, node_name):
-        # print(f'Drone: going to {node_name}')
+        print(f'Drone: going to {node_name}')
         node = graph.get_node(node_name)
-        self.go_to_goal(node.fisical_position[0], node.fisical_position[1], MAX_ALTITUDE)
+        cur_node = None
+        cur_node_name = None
+        cur_fisical_position = self.gps.getValues()
+        smallest_distance = 1000000
+        for n_name,n_node in graph.get_nodes().items():
+            if n_node.fisical_position is not None:
+                distance = np.linalg.norm(np.array(n_node.fisical_position) - np.array(cur_fisical_position))
+                if distance < smallest_distance:
+                    smallest_distance = distance
+                    cur_node = n_node
+                    cur_node_name = n_name
+        
+        # handle roundabouts
+        print(f"cur_node_name: {cur_node_name}, node_name: {node_name}")
+        if set([cur_node_name, node_name]) == {"tl_1", "tl_2"}:
+            print("cur coord: ", cur_node.fisical_position)
+            print("node coord: ", node.fisical_position)
+            print("mid coord: ", (node.fisical_position[0] + cur_node.fisical_position[0])/2, (node.fisical_position[1]+3))
+            self.go_to_goal((node.fisical_position[0] - 2), (node.fisical_position[1] + cur_node.fisical_position[1])/2, MAX_ALTITUDE)
+        elif set([cur_node_name, node_name]) == {"bl_1", "bl_2"}:
+            self.go_to_goal((node.fisical_position[0] + 2), (node.fisical_position[1] + cur_node.fisical_position[1])/2, MAX_ALTITUDE)
+        elif set([cur_node_name, node_name]) == {"br_1", "br_2"}:
+            self.go_to_goal((node.fisical_position[0] + 2), (node.fisical_position[1] + cur_node.fisical_position[1])/2, MAX_ALTITUDE)
 
+        self.go_to_goal(node.fisical_position[0], node.fisical_position[1], MAX_ALTITUDE)
         self.emitter.setChannel(CPU_CHANNEL)
         message = (DRONE_CHANNEL, "reached_node", node_name)
         self.emitter.send(str(message).encode('utf-8'))
@@ -349,7 +372,6 @@ class HandleCommands:
         message = (DRONE_CHANNEL, "group_dropped", group_num, table_num)
         self.emitter.setChannel(CPU_CHANNEL)
         self.emitter.send(str(message).encode('utf-8'))
-
 
     def lift_off(self):
         print('Drone: lifiting off')
