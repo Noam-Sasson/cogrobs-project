@@ -323,9 +323,9 @@ class worldState:
                         self.groups_states[group]['order_taken'] = True
 
                         self.current_orders[self.owner_to_order[group]]['food'] = self.orders[group]['profit']
-                        print(f"CPU: Group {group} ordered {order}")
-                        self.world_generator.kitchen_make_food(group, order) # check if order reaches kitchen
-                        print(f"CPU: Group {group} order sent to kitchen")
+                        # print(f"CPU: Group {group} ordered {order}")
+                        # self.world_generator.kitchen_make_food(group, order) # check if order reaches kitchen
+                        # print(f"CPU: Group {group} order sent to kitchen")
                     if message[1] == "picked_up_order":
                         group = message[2]
                         self.waiter["carries"] = group
