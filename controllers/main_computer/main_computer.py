@@ -476,62 +476,62 @@ def run_robot(robot):
     
     print("CPU: Ready to start the simulation")
 
-    # while robot.step(timestep) != -1 and len(world_state.groups_states) == 0:
-    #     world_state.listen_to_entities(receiver)
+    while robot.step(timestep) != -1 and len(world_state.groups_states) == 0:
+        world_state.listen_to_entities(receiver)
 
-    # waiter_command_handler.go_to("tr_1")
-    # waiter_command_handler.go_to("mr_1")
-    # drone_command_handler.pick_up_customer_group(1)
-    # drone_command_handler.go_to("ml_1")
-    # drone_command_handler.go_to("ml")
-    # drone_command_handler.go_to("tbl_bl")
-    # drone_command_handler.drop_off_customer_group(1, "tbl_bl")
-    # waiter_command_handler.go_to("ml_2")
-    # waiter_command_handler.go_to("ml")
-    # waiter_command_handler.go_to("tbl_bl")
-    # waiter_command_handler.take_order(1)
+    world_state.waiter_command_handler.go_to("tr_1")
+    world_state.waiter_command_handler.go_to("mr_1")
+    world_state.drone_command_handler.pick_up_customer_group(1)
+    world_state.drone_command_handler.go_to("ml_1")
+    world_state.drone_command_handler.go_to("ml")
+    world_state.drone_command_handler.go_to("tbl_bl")
+    world_state.drone_command_handler.drop_off_customer_group(1, "tbl_bl")
+    world_state.waiter_command_handler.go_to("ml_2")
+    world_state.waiter_command_handler.go_to("ml")
+    world_state.waiter_command_handler.go_to("tbl_bl")
+    world_state.waiter_command_handler.take_order(1)
     
-    # while robot.step(timestep) != -1 and world_state.tables_states["tbl_bl"] != world_state.WAITING_FOR_FOOD:
-    #     world_state.listen_to_entities(receiver)
+    while robot.step(timestep) != -1 and world_state.tables_states["tbl_bl"] != world_state.WAITING_FOR_FOOD:
+        world_state.listen_to_entities(receiver)
 
-    # waiter_command_handler.go_to("ml")
-    # waiter_command_handler.go_to("ml_2")
-    # waiter_command_handler.go_to("mr_1")
-    # waiter_command_handler.go_to("tr_1")
-    # waiter_command_handler.go_to("k")
-    # waiter_command_handler.go_to("k_in")
+    world_state.waiter_command_handler.go_to("ml")
+    world_state.waiter_command_handler.go_to("ml_2")
+    world_state.waiter_command_handler.go_to("mr_1")
+    world_state.waiter_command_handler.go_to("tr_1")
+    world_state.waiter_command_handler.go_to("k")
+    world_state.waiter_command_handler.go_to("k_in")
 
-    # # do a check for waiter in the kitchen
-    # while robot.step(timestep) != -1 and world_state.waiter["position"] != "k_in": # make check for food ready
-    #     world_state.listen_to_entities(receiver)
+    # do a check for waiter in the kitchen
+    while robot.step(timestep) != -1 and world_state.waiter["position"] != "k_in": # make check for food ready
+        world_state.listen_to_entities(receiver)
     
-    # waiter_command_handler.pick_up_food(1)
+    world_state.waiter_command_handler.pick_up_food(1)
 
-    # waiter_command_handler.go_to("k")
-    # waiter_command_handler.go_to("tr_1")
-    # waiter_command_handler.go_to("mr_1")
-    # waiter_command_handler.go_to("ml_2")
-    # waiter_command_handler.go_to("ml")
-    # waiter_command_handler.go_to("tbl_bl")
+    world_state.waiter_command_handler.go_to("k")
+    world_state.waiter_command_handler.go_to("tr_1")
+    world_state.waiter_command_handler.go_to("mr_1")
+    world_state.waiter_command_handler.go_to("ml_2")
+    world_state.waiter_command_handler.go_to("ml")
+    world_state.waiter_command_handler.go_to("tbl_bl")
 
-    # while robot.step(timestep) != -1 and world_state.waiter["position"] != "tbl_bl":
-    #     world_state.listen_to_entities(receiver)
+    while robot.step(timestep) != -1 and world_state.waiter["position"] != "tbl_bl":
+        world_state.listen_to_entities(receiver)
 
-    # waiter_command_handler.deliver_food(1)
-    # waiter_command_handler.go_to("ml")
-    # waiter_command_handler.go_to("ml_1")
+    world_state.waiter_command_handler.deliver_food(1)
+    world_state.waiter_command_handler.go_to("ml")
+    world_state.waiter_command_handler.go_to("ml_1")
     
-    # while robot.step(timestep) != -1 and world_state.waiter["position"] != "ml_1":
-    #     world_state.listen_to_entities(receiver)
+    while robot.step(timestep) != -1 and world_state.waiter["position"] != "ml_1":
+        world_state.listen_to_entities(receiver)
 
-    # cleaner_command_handler.go_to("mr_1")
-    # cleaner_command_handler.go_to("ml_2")
-    # cleaner_command_handler.go_to("ml")
-    # cleaner_command_handler.go_to("tbl_bl")
-    # cleaner_command_handler.clean_table("tbl_bl")
+    world_state.cleaner_command_handler.go_to("mr_1")
+    world_state.cleaner_command_handler.go_to("ml_2")
+    world_state.cleaner_command_handler.go_to("ml")
+    world_state.cleaner_command_handler.go_to("tbl_bl")
+    world_state.cleaner_command_handler.clean_table("tbl_bl")
 
-    # while robot.step(timestep) != -1 and world_state.tables_states["tbl_bl"] != world_state.CLEAR:
-    #     world_state.listen_to_entities(receiver)
+    while robot.step(timestep) != -1 and world_state.tables_states["tbl_bl"] != world_state.CLEAR:
+        world_state.listen_to_entities(receiver)
 
 
 
@@ -566,7 +566,7 @@ def run_robot(robot):
     # waiter_command_handler.go_to("tbl_tr")
     # waiter_command_handler.go_to("mr")
     # waiter_command_handler.go_to("tbl_br")
-    explore_nodes_weights_with_dfs(graph, "tl_1", world_state.drone_command_handler.go_to, robot, timestep, world_state, receiver, world_state.drone)
+    # explore_nodes_weights_with_dfs(graph, "tl_1", world_state.drone_command_handler.go_to, robot, timestep, world_state, receiver, world_state.drone)
 
     while robot.step(timestep) != -1:
         world_state.listen_to_entities(receiver)

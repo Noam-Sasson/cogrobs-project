@@ -17,8 +17,8 @@ EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/project
 WorldInfo {
 }
 Viewpoint {
-  orientation 0.27608059191063367 -0.14765838822444013 -0.9497244374855448 4.081555082707988
-  position 2.546012345572943 -3.4005996333477198 8.77257232593688
+  orientation 0.44644952476026994 -0.0206075510849099 -0.8945714899769676 3.2241240307235723
+  position 20.793230694904203 4.039661936348073 29.585273112211897
   follow "inside"
 }
 TexturedBackground {
@@ -995,7 +995,7 @@ Robot {
   controller "waiter_controller"
 }
 Robot {
-  translation -5.62364 2.76945 0.510728
+  translation 0.00761832 6.99077 0.783449
   rotation -0.018057198808381778 0.0002072239863250175 0.9998369340194501 -3.129025307179586
   children [
     DEF Body Shape {
@@ -1320,7 +1320,7 @@ Robot {
           name "antena"
         }
       ]
-      channel 3
+      channel 4
       allowedChannels [
         6, 5, 4, 3, 2
       ]

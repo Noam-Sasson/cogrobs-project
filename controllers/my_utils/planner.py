@@ -4,6 +4,7 @@ from unified_planning.engines import engine
 from unified_planning.engines.sequential_simulator import UPSequentialSimulator
 from unified_planning.model.metrics import MaximizeExpressionOnFinalState
 from unified_planning.plans.plan import PlanKind
+from unified_planning.engines import PlanGenerationResultStatus
 from collections import defaultdict
 from itertools import product
 import time
@@ -24,13 +25,15 @@ def solve_problem(initial_state_dict : dict):
     - revenue: current revenue
     '''
     # Create the planning problem
-    CUST_COUNT = 2
+    CUST_COUNT = 5
     DISH_COUNT = 2
     problem = Problem("DinerProblem")
 
     # Define types of objects (Table, Robot, Customer)
     Table = UserType("Table")
-    Robot = UserType("Robot")
+    Host = UserType("Host")
+    Cleaner = UserType("Cleaner")
+    Server = UserType("Server")
     Customer = UserType("Customer")
     Location = UserType("Location")
     # Order = UserType('Order')
@@ -43,7 +46,7 @@ def solve_problem(initial_state_dict : dict):
         table_tr := Object('table_tr', Table),
         table_br := Object('table_br', Table),
     ]
-    fake_table = Object('fake_table', Table)
+    # fake_table = Object('fake_table', Table)
     locations = [
         (kitchen := Object("kitchen", Location)),
         (TL1 := Object('TL1', Location)),
@@ -68,22 +71,22 @@ def solve_problem(initial_state_dict : dict):
         (fake_location := Object('fake_location', Location))
     ]
     robots = [
-        host := Object("host", Robot),
-        server_1 := Object("server_1", Robot),
+        host := Object("host", Host),
+        server_1 := Object("server_1", Server),
         # server_2 := Object("server_2", Robot),
-        cleaner := Object("cleaner", Robot)
+        cleaner := Object("cleaner", Cleaner)
 
     ]
     customers = [Object(f"customer_{i}", Customer) for i in range(1, CUST_COUNT+1)]
-    fake_customer = Object('fake_customer', Customer)
+    # fake_customer = Object('fake_customer', Customer)
     # orders = [Object(f'order_{table}', Order) for table in tables]
     # fake_order = Object('fake_order', Order)
     dishes = [Object(f'dish_{i}', Dish) for i in range(1, DISH_COUNT+1)]
     problem.add_objects(locations + tables + robots + customers + dishes)
     # Predicates
-    Adjacent = Fluent("Adjacent", BoolType(), location1=Location,
-                      location2=Location)  # location1 is adjacent to location2
-    Distance = Fluent("Distance", IntType(), location1=Location, location2=Location)
+    Adjacent = Fluent("Adjacent", BoolType(), loc1=Location,
+                      loc2=Location)  # location1 is adjacent to location2
+    Distance = Fluent("Distance", IntType(), loc1=Location, loc2=Location)
     Distances = {
         (kitchen, K): 6,
         (K, TR1): 14,
@@ -166,6 +169,7 @@ def solve_problem(initial_state_dict : dict):
     (k, kin): 7.520000000000039
     (ml2, mr1): 14.271999999999991
     '''
+    problem.add_fluent(Adjacent, default_initial_value=False)
     total_distances = defaultdict(int, Distances | {(loc2, loc1): dist for (loc1, loc2), dist in Distances.items()})
     for loc1, loc2 in product(locations, repeat=2):
         problem.set_initial_value(Distance(loc1, loc2), total_distances[(loc1, loc2)])
@@ -177,18 +181,20 @@ def solve_problem(initial_state_dict : dict):
             problem.set_initial_value(Adjacent(loc1, loc2), False)
             problem.set_initial_value(Adjacent(loc2, loc1), False)
 
-    Job = Fluent('Job', IntType(), robot=Robot)
-    IsAerial = Fluent('IsAerial', BoolType(), robot=Robot)
-    HOST, SERVER, CLEANER = 0, 1, 2
+    # Job = Fluent('Job', IntType(), robot=Robot)
+    # IsAerial = Fluent('IsAerial', BoolType(), robot=Robot)
+    # HOST, SERVER, CLEANER = 0, 1, 2
     # Fluents
-    At = Fluent('At', Location, robot=Robot)
-    Table_At = Fluent('Table_At', Location, table=Table)
+    Host_At = Fluent('Host_At', BoolType(), host=Host, loc=Location)
+    Server_At = Fluent('Server_At', BoolType(), server=Server, loc=Location)
+    Cleaner_At = Fluent('Cleaner_At', BoolType(), cleaner=Cleaner, loc=Location)
+    Table_At = Fluent('Table_At', BoolType(), table=Table, loc=Location)
 
     Occupied = Fluent("Occupied", BoolType(), table=Table)
     Clean = Fluent("Clean", BoolType(), table=Table)
 
-    Seating_Customers = Fluent('Seating_Customer', BoolType(), robot=Robot)
-    Following = Fluent('Following', BoolType(), robot=Robot, customer=Customer)
+    Seating_Customers = Fluent('Seating_Customer', BoolType(), robot=Host)
+    Following = Fluent('Following', BoolType(), robot=Host, customer=Customer)
 
     In_Rest = Fluent('In_Rest', BoolType(), customer=Customer)
     Seated = Fluent('Seated', BoolType(), customer=Customer)
@@ -196,37 +202,37 @@ def solve_problem(initial_state_dict : dict):
     Order_Taken = Fluent('Order_Taken', BoolType(), table=Table)
     Served = Fluent("Served", BoolType(), table=Table)
     Eaten = Fluent("Eaten", BoolType(), customer=Customer)
-    Seated_At = Fluent('Seated_At', Table, customer=Customer)
+    Seated_At = Fluent('Seated_At', BoolType(), customer=Customer, table=Table)
     Party_Size = Fluent('Party_Size', IntType(), customer=Customer)
     Used = Fluent('Used', BoolType(), dish = Dish)
     Order_In_Making = Fluent('In_Making', BoolType(), table = Table)
-    Used_by = Fluent('Used_by', Table, dish = Dish)
+    Used_by = Fluent('Used_by', BoolType(), dish = Dish, table = Table)
+    Cleaning = Fluent('Cleaning', BoolType(), cleaner = Cleaner)
 
     for customer in customers:
         problem.set_initial_value(Party_Size(customer), 2)
 
-    Holds = Fluent('Holds', BoolType(), robot=Robot)
-    Serves = Fluent('serves', Table, robot=Robot)
+    Holds = Fluent('Holds', BoolType(), server = Server)
+    Serves = Fluent('serves', BoolType(), server = Server, table =Table)
 
     # Owner = Fluent('Owner', Customer, order=Order)
     Food_Order = Fluent('Food', IntType(), table = Table)
     Food_Prep_Time = Fluent('Food_Prep_Time', IntType(), table = Table)
     Can_Be_Taken = Fluent('Can_Be_Taken', BoolType(), table = Table)
 
-    Stood_In = Fluent('Stood_In', BoolType(), location=Location)
+    Stood_In = Fluent('Stood_In', BoolType(), loc=Location)
 
     Revenue = Fluent('Revenue', IntType())
     problem.add_fluent(Revenue, default_initial_value=0)
 
     # Define actions
     # pick up customers
-    pick_up_customers = InstantaneousAction('take_customers', rob=Robot, cust=Customer)
+    pick_up_customers = InstantaneousAction('take_customers', rob=Host, cust=Customer)
     rob = pick_up_customers.parameter('rob')
     cust = pick_up_customers.parameter('cust')
 
     pick_up_customers.add_precondition(Not(In_Rest(cust)))
-    pick_up_customers.add_precondition(Equals(Job(rob), HOST))
-    pick_up_customers.add_precondition(Equals(At(rob), TL1))
+    pick_up_customers.add_precondition(Host_At(rob, TL1))
     pick_up_customers.add_precondition(Not(Seating_Customers(rob)))
 
 
@@ -235,14 +241,16 @@ def solve_problem(initial_state_dict : dict):
     pick_up_customers.add_effect(In_Rest(cust), True)
 
     # seat customers
-    seat_customers = InstantaneousAction('seat_customers', rob=Robot, table=Table, cust=Customer)
+    seat_customers = InstantaneousAction('seat_customers', rob=Host, table=Table, cust=Customer, loc = Location)
     rob = seat_customers.parameter('rob')
     table = seat_customers.parameter('table')
     cust = seat_customers.parameter('cust')
+    loc = seat_customers.parameter('loc')
 
     seat_customers.add_precondition(Seating_Customers(rob))
     seat_customers.add_precondition(Following(rob, cust))
-    seat_customers.add_precondition(Equals(At(rob), Table_At(table)))
+    seat_customers.add_precondition(Host_At(rob, loc))
+    seat_customers.add_precondition(Table_At(table, loc))
     seat_customers.add_precondition(Not(Occupied(table)))
     seat_customers.add_precondition(Clean(table))
 
@@ -250,54 +258,59 @@ def solve_problem(initial_state_dict : dict):
     seat_customers.add_effect(Following(rob, cust), False)
 
     seat_customers.add_effect(Occupied(table), True)
-    seat_customers.add_effect(Seated_At(cust), table)
+    seat_customers.add_effect(Seated_At(cust, table), True)
     seat_customers.add_effect(Seated(cust), True)
 
     # clean a table
-    clean_table = DurativeAction('clean_table', rob=Robot, table=Table)
+    clean_table = DurativeAction('clean_table', rob=Cleaner, table=Table, loc = Location)
     rob = clean_table.parameter('rob')
     table = clean_table.parameter('table')
+    loc = clean_table.parameter('loc')
 
-    clean_table.set_fixed_duration(CLEANING_TIME := 2)  # TODO: Decide on Cleaning time
-    clean_table.add_condition(StartTiming(), Equals(Job(rob), CLEANER))
-    clean_table.add_condition(StartTiming(), Equals(At(rob), Table_At(table)))
+    clean_table.set_fixed_duration(CLEANING_TIME := 60)  # TODO: Decide on Cleaning time
+    clean_table.add_condition(StartTiming(),Cleaner_At(rob, loc))
+    clean_table.add_condition(StartTiming(),Table_At(table, loc))  
     clean_table.add_condition(StartTiming(), Not(Occupied(table)))
     clean_table.add_condition(StartTiming(), Not(Clean(table)))
+    clean_table.add_condition(StartTiming(), Not(Cleaning(rob)))
+    clean_table.add_effect(StartTiming(), Cleaning(rob), True)
 
     clean_table.add_effect(EndTiming(), Clean(table), True)
+    clean_table.add_effect(EndTiming(), Cleaning(rob), False)
 
     # decide order
     decide_order = DurativeAction('decide_order', table=Table, cust=Customer)
     cust = decide_order.parameter('cust')
     table = decide_order.parameter('table')
 
-    decide_order.set_fixed_duration(ORDERING_TIME := 2)  # TODO: Decide on Ordering time
+    decide_order.set_fixed_duration(ORDERING_TIME := 60)  # TODO: Decide on Ordering time
     decide_order.add_condition(StartTiming(), Seated(cust))
     decide_order.add_condition(StartTiming(), Not(Ready_To_Order(table)))
     decide_order.add_condition(StartTiming(), Not(Order_Taken(table)))
     decide_order.add_condition(StartTiming(), Not(Served(table)))
-    decide_order.add_condition(StartTiming(), Equals(Seated_At(cust), table))
+    decide_order.add_condition(StartTiming(), Seated_At(cust, table))
 
     decide_order.add_effect(EndTiming(), Ready_To_Order(table), True)
 
     # actually order
-    take_order = InstantaneousAction(f'take_order', rob=Robot, table=Table, dish=Dish)
+    take_order = InstantaneousAction(f'take_order', rob=Server, table=Table, dish=Dish, loc = Location)
     rob = take_order.parameter('rob')
     # cust = take_order.parameter('cust')
     table = take_order.parameter('table')
     # order = take_order.parameter('order')
     dish = take_order.parameter('dish')
+    loc = take_order.parameter('loc')
 
     take_order.add_precondition(Not(Used(dish)))
-    take_order.add_precondition(Equals(Job(rob), SERVER))
     take_order.add_precondition(Ready_To_Order(table))
     # take_order.add_precondition(Equals(Seated_At(cust), table))
-    take_order.add_precondition(Equals(At(rob), Table_At(table)))
+    take_order.add_precondition(Server_At(rob, loc))
+    take_order.add_precondition(Table_At(table, loc))
     take_order.add_precondition(Not(Order_Taken(table)))
     take_order.add_precondition(Not(Served(table)))
     # take_order.add_precondition(Equals(Owner(order), table))
 
-    take_order.add_effect(Used_by(dish), table)
+    take_order.add_effect(Used_by(dish, table), True)
     take_order.add_effect(Used(dish), True)
     take_order.add_effect(Order_Taken(table), True)
     take_order.add_effect(Food_Order(table), 20)#Times(Party_Size(cust), 20)) to be handled by simulation
@@ -309,7 +322,7 @@ def solve_problem(initial_state_dict : dict):
     table = make_food.parameter('table')
     make_food.set_fixed_duration(total_time := Food_Prep_Time(table))#Times(Party_Size(Owner(order)), PREP_TIME))
 
-    make_food.add_condition(StartTiming(), Equals(Used_by(dish), table))
+    make_food.add_condition(StartTiming(), Used_by(dish, table))
     make_food.add_condition(StartTiming(), GT(Food_Order(table), 0)) # order has food
     make_food.add_condition(StartTiming(), Not(Order_In_Making(table)))
     make_food.add_condition(StartTiming(), Not(Can_Be_Taken(table)))
@@ -320,112 +333,157 @@ def solve_problem(initial_state_dict : dict):
     make_food.add_effect(EndTiming(), Order_In_Making(table), False)
 
     # take food
-    take_food = InstantaneousAction('take_food', rob=Robot, table = Table, dish=Dish)
+    take_food = InstantaneousAction('take_food', rob=Server, table = Table, dish=Dish)
     rob = take_food.parameter('rob')
     # order = take_food.parameter('order')
     table = take_food.parameter('table')
 
-    take_food.add_precondition(Equals(Used_by(dish), table))
-    take_food.add_precondition(Equals(Job(rob), SERVER))
+    take_food.add_precondition(Used_by(dish, table))
     take_food.add_precondition(Not(Holds(rob)))
-    take_food.add_precondition(Equals(At(rob), kitchen))
+    take_food.add_precondition(Server_At(rob, kitchen))
     take_food.add_precondition(Can_Be_Taken(table))
 
     take_food.add_effect(Holds(rob), True)
-    take_food.add_effect(Serves(rob), table)
+    take_food.add_effect(Serves(rob, table), True)
     take_food.add_effect(Can_Be_Taken(table), False)
     take_food.add_effect(Used(dish), False)
+    take_food.add_effect(Used_by(dish, table), False)
 
     # give food
-    serve_food = InstantaneousAction('serve_food', rob=Robot, table = Table)
+    serve_food = InstantaneousAction('serve_food', rob=Server, table = Table, loc = Location)
     rob = serve_food.parameter('rob')
     # cust = serve_food.parameter('cust')
     table = serve_food.parameter('table')
+    loc = serve_food.parameter('loc')
 
     serve_food.add_precondition(Holds(rob))
-    serve_food.add_precondition(Equals(Serves(rob), table))
-    serve_food.add_precondition(Equals(At(rob), Table_At(table)))
+    serve_food.add_precondition(Serves(rob, table))
+    serve_food.add_precondition(Server_At(rob, loc))
+    serve_food.add_precondition(Table_At(table, loc))
 
     serve_food.add_effect(Holds(rob), False)
     serve_food.add_effect(Served(table), True)
+    serve_food.add_effect(Serves(rob, table), False)
 
     # eat food
     eat = DurativeAction('eat', cust=Customer, table=Table)
     cust = eat.parameter('cust')
     table = eat.parameter('table')
 
-    eat.set_fixed_duration(EATING_TIME := 10)
+    eat.set_fixed_duration(EATING_TIME := 120)
     eat.add_condition(StartTiming(), Served(table))
-    eat.add_condition(StartTiming(), Equals(Seated_At(cust), table))
+    eat.add_condition(StartTiming(), Seated_At(cust, table))
 
     eat.add_effect(EndTiming(), Occupied(table), False)
     eat.add_effect(EndTiming(), Clean(table), False)
     eat.add_effect(EndTiming(), Eaten(cust), True)
-    eat.add_increase_effect(EndTiming(), Revenue, 20)#Times(Party_Size(cust), 20)) ## will be insreted by simulation
+    eat.add_increase_effect(EndTiming(), Revenue, 20) #Times(Party_Size(cust), 20)) ## will be insreted by simulation
     
     eat.add_effect(EndTiming(), Served(table), False)
     eat.add_effect(EndTiming(), Ready_To_Order(table), False)
     eat.add_effect(EndTiming(), Order_Taken(table), False)
     eat.add_effect(EndTiming(), Food_Order(table), 0)
+    eat.add_effect(EndTiming(), Seated_At(cust, table), False)
 
-    move = DurativeAction('move', rob=Robot, loc1=Location, loc2=Location)
-    rob = move.parameter('rob')
-    loc1 = move.parameter('loc1')
-    loc2 = move.parameter('loc2')
-    move.set_fixed_duration(Distance(loc1, loc2))
+    host_move = DurativeAction('host_move', rob=Host, loc1=Location, loc2=Location)
+    rob = host_move.parameter('rob')
+    loc1 = host_move.parameter('loc1')
+    loc2 = host_move.parameter('loc2')
+    host_move.set_fixed_duration(Distance(loc1, loc2))
 
-    move.add_condition(StartTiming(), Adjacent(loc1, loc2))
-    move.add_condition(StartTiming(), Equals(At(rob), loc1))
-    move.add_condition(StartTiming(), Not(Stood_In(loc2)))
+    host_move.add_condition(StartTiming(), Adjacent(loc1, loc2))
+    host_move.add_condition(StartTiming(), Host_At(rob, loc1))
+    host_move.add_condition(EndTiming(), Not(Stood_In(loc2)))
 
-    move.add_effect(EndTiming(), Stood_In(loc1), False)
-    move.add_effect(EndTiming(), At(rob), loc2)
-    move.add_effect(EndTiming(), Stood_In(loc2), True)
+    host_move.add_effect(StartTiming(), Stood_In(loc1), False)
+    host_move.add_effect(EndTiming(), Host_At(rob, loc2), True)
+    host_move.add_effect(StartTiming(), Host_At(rob, loc1), False)
+    host_move.add_effect(EndTiming(), Stood_In(loc2), True)
 
-    go_home = DurativeAction('go_home', rob=Robot)
+    server_move = DurativeAction('server_move', rob=Server, loc1=Location, loc2=Location)
+    rob = server_move.parameter('rob')
+    loc1 = server_move.parameter('loc1')
+    loc2 = server_move.parameter('loc2')
+    server_move.set_fixed_duration(Distance(loc1, loc2))
+
+    server_move.add_condition(StartTiming(), Adjacent(loc1, loc2))
+    server_move.add_condition(StartTiming(), Server_At(rob, loc1))
+    server_move.add_condition(EndTiming(), Not(Stood_In(loc2)))
+
+    server_move.add_effect(StartTiming(), Stood_In(loc1), False)
+    server_move.add_effect(EndTiming(), Server_At(rob, loc2), True)
+    server_move.add_effect(StartTiming(), Server_At(rob, loc1), False)
+    server_move.add_effect(EndTiming(), Stood_In(loc2), True)
+
+    cleaner_move = DurativeAction('cleaner_move', rob=Cleaner, loc1=Location, loc2=Location)
+    rob = cleaner_move.parameter('rob')
+    loc1 = cleaner_move.parameter('loc1')
+    loc2 = cleaner_move.parameter('loc2')
+    cleaner_move.set_fixed_duration(Distance(loc1, loc2))
+
+    cleaner_move.add_condition(StartTiming(), Adjacent(loc1, loc2))
+    cleaner_move.add_condition(StartTiming(), Cleaner_At(rob, loc1))
+    cleaner_move.add_condition(StartTiming(), Not(Stood_In(loc2)))
+    cleaner_move.add_condition(EndTiming(), Not(Cleaning(rob)))
+
+    cleaner_move.add_effect(StartTiming(), Stood_In(loc1), False)
+    cleaner_move.add_effect(EndTiming(), Cleaner_At(rob, loc2), True)
+    cleaner_move.add_effect(StartTiming(), Cleaner_At(rob, loc1), False)
+    cleaner_move.add_effect(EndTiming(), Stood_In(loc2), True)
+
+    go_home = DurativeAction('go_home', loc1 = Location ,rob=Host)
     rob = go_home.parameter('rob')
+    loc1 = go_home.parameter('loc1')
     go_home.set_fixed_duration(9) # TODO: Decide on going home time
 
-    go_home.add_condition(StartTiming(), Not(Stood_In(TL1)))
-    go_home.add_condition(StartTiming(), IsAerial(rob))
+    go_home.add_condition(EndTiming(), Not(Stood_In(TL1)))
+    go_home.add_condition(StartTiming(), Host_At(rob, loc1))
     go_home.add_condition(StartTiming(), Not(Seating_Customers(rob)))
+    # go_home.add_condition(StartTiming(), Not(Stood_In(loc1)))
 
-    go_home.add_effect(StartTiming(), Stood_In(TL1), False)
-    go_home.add_effect(EndTiming(), At(rob), TL1)
+    go_home.add_effect(StartTiming(), Stood_In(loc1), False)
+    # go_home.add_effect(StartTiming(), Stood_In(TL1), False)
+    go_home.add_effect(EndTiming(), Host_At(rob, TL1), True)
+    go_home.add_effect(StartTiming(), Host_At(rob, loc1), False)
     go_home.add_effect(EndTiming(), Stood_In(TL1), True)
 
     # Initial state
-    problem.add_fluents([At, Table_At, Job, Adjacent, Serves, Seated_At, IsAerial])
+    # problem.add_fluents([Host_At, Server_At, Cleaner_At, Table_At, Adjacent,  Seated_At])
     # for order in orders+[fake_order]:
     #     problem.set_initial_value(Owner(order), fake_customer)
+    
+    
+    problem.add_fluent(Serves, default_initial_value=False)
+    problem.add_fluent(Host_At, default_initial_value=False)
+    problem.add_fluent(Server_At, default_initial_value=False)
+    problem.add_fluent(Cleaner_At, default_initial_value=False)
+    problem.add_fluent(Table_At, default_initial_value=False)
+    # problem.add_fluent(Adjacent, default_initial_value=False)
+    problem.add_fluent(Seated_At, default_initial_value=False)
+
     for dish in dishes:
         problem.set_initial_value(Used(dish), False)
-    for rob in robots:
-        problem.set_initial_value(Serves(rob), fake_table)
-        problem.set_initial_value(IsAerial(rob), False)
-    for customer in customers+[fake_customer]:
-        problem.set_initial_value(Seated_At(customer), fake_table)
 
-    problem.set_initial_value(Occupied(fake_table), True)
+    # for customer in customers+[fake_customer]:
+    #     problem.set_initial_value(Seated_At(customer), fake_table)
+
+    problem.add_fluent(Cleaning, default_initial_value=False)
+    # problem.set_initial_value(Occupied(fake_table), True)
     problem.add_fluent(Stood_In, default_initial_value=False)
-    problem.set_initial_value(At(host), TL1)  # Host starts at the entrance
-    problem.set_initial_value(IsAerial(host), True)
+    problem.set_initial_value(Host_At(host, TL1), True)  # Host starts at the entrance
     problem.set_initial_value(Stood_In(TL1), True)
-    problem.set_initial_value(At(server_1), K)  # Server starts at k
+    problem.set_initial_value(Server_At(server_1, K), True)  # Server starts at k
     # problem.set_initial_value(At(server_2), BL2)  # Server starts at k
     # problem.set_initial_value(Stood_In(BL2), True)
     problem.set_initial_value(Stood_In(K), True)
-    problem.set_initial_value(At(cleaner), kitchen)  # Cleaner starts at the kitchen
+    problem.set_initial_value(Cleaner_At(cleaner, kitchen), True)  # Cleaner starts at the kitchen
     problem.set_initial_value(Stood_In(kitchen), True)
-    problem.set_initial_value(Table_At(table_bl), TBL_BL)
-    problem.set_initial_value(Table_At(table_tl), TBL_TL)
-    problem.set_initial_value(Table_At(table_tr), TBL_TR)
-    problem.set_initial_value(Table_At(table_br), TBL_BR)
-    problem.set_initial_value(Job(host), HOST)
-    problem.set_initial_value(Job(server_1), SERVER)
+    problem.set_initial_value(Table_At(table_bl, TBL_BL), True)
+    problem.set_initial_value(Table_At(table_tl, TBL_TL), True)
+    problem.set_initial_value(Table_At(table_tr, TBL_TR), True)
+    problem.set_initial_value(Table_At(table_br, TBL_BR), True)
     # problem.set_initial_value(Job(server_2), SERVER)
-    problem.set_initial_value(Job(cleaner), CLEANER)
-    problem.set_initial_value(Table_At(fake_table), fake_location)
+    # problem.set_initial_value(Table_At(fake_table), fake_location)
 
     problem.add_fluent(Occupied, default_initial_value=False)
     problem.add_fluent(Clean, default_initial_value=True)
@@ -444,29 +502,23 @@ def solve_problem(initial_state_dict : dict):
     problem.add_fluent(Can_Be_Taken, default_initial_value=False)
     problem.add_fluent(Food_Order, default_initial_value=0)
     problem.add_fluent(Order_In_Making, default_initial_value=False)
-    problem.add_fluent(Used_by, default_initial_value=fake_table)
+    problem.add_fluent(Used_by, default_initial_value=False)
     problem.add_fluent(Distance, default_initial_value=0)
     problem.add_fluent(Holds, default_initial_value=False)
-    problem.add_fluent(Food_Prep_Time, default_initial_value=2)
+    problem.add_fluent(Food_Prep_Time, default_initial_value=320) # 3 minutes
     problem.add_fluent(In_Rest, default_initial_value=False)
 
-    problem.add_objects([fake_customer, fake_table])
+    # problem.add_objects([fake_customer, fake_table])
 
-    problem.add_actions([pick_up_customers, seat_customers, clean_table, decide_order, take_order, make_food, take_food, serve_food, eat, move, go_home])
+    problem.add_actions([pick_up_customers, seat_customers, clean_table, decide_order, take_order, make_food, take_food, serve_food, eat, host_move, cleaner_move, server_move, go_home])
 
-
+    problem.add_quality_metric(MinimizeMakespan())
     # if initial_state_dict is not None:
     #     parse_dict_to_problem(initial_state_dict, problem)
 
-    # for cust in customers:
-    #     problem.add_goal(Seated(cust))
-    problem.add_goal(Seated(customers[0]))
-    problem.add_goal(Eaten(customers[0]))
-    # problem.add_goal(Seated(customers[1]))
-    # problem.add_goal(Holds(server_1))
-    # problem.add_goal(Eaten(customers[1]))
-
-    # problem.add_goal(Order_Taken(table_bl))
+    for cust in customers:
+        problem.add_goal(Eaten(cust))
+    
     # problem.add_goal(Holds(server_1))
 
     # MaximizeExpressionOnFinalState(Revenue)
@@ -480,7 +532,7 @@ def solve_problem(initial_state_dict : dict):
     heuristics = ['hmax', 'hadd', 'hff', 'blind', 'hlandmarks']
 
     planner_config = {
-         'heuristic': 'hadd',
+         'heuristic': 'hff',
          'weight': 0.8,
     }
     
@@ -673,16 +725,21 @@ def solve_problem(initial_state_dict : dict):
     
     original_problem = problem
     # grounded_problem = ground_all_preconditions(original_problem)
-    # with Compiler(problem_kind=grounded_problem.kind,
+    # with Compiler(problem_kind=problem.kind,
     # compilation_kind=CompilationKind.USERTYPE_FLUENTS_REMOVING, ) as compiler:
-    #     compilation_result_1 = compiler.compile(grounded_problem)
+    #     compilation_result_1 = compiler.compile(problem)
     #     with Compiler(problem_kind=compilation_result_1.problem.kind, compilation_kind=CompilationKind.GROUNDING) as bounded_types_compiler:
     #         compilation_result_2 = bounded_types_compiler.compile(compilation_result_1.problem)
 
     start_time = time.time()
     action_sequence = []
-    with Replanner(problem=problem, name="replanner[tamer]", params=planner_config) as replanner:
-        result = replanner.resolve(problem)
+    # compilation_result_1.problem.environment.factory.add_engine(name = "lpg", module_name ="up_lpg.lpg_planner", class_name = "LPGEngine")
+    # for fluent in compilation_result_1.problem.fluents:
+    #     print(fluent)
+    # print(compilation_result_1.problem.goals)
+    
+    with Replanner(problem=problem, name="replanner[lpg]", optimality_guarantee=PlanGenerationResultStatus.SOLVED_OPTIMALLY) as replanner:
+        result = replanner.resolve()
         plan = result.plan
         # seudo_plan = result.plan
         # plan = seudo_plan.replace_action_instances(compilation_result_2.map_back_action_instance).replace_fluent_instances(compilation_result_1.map_back_fluent_instance)
@@ -690,12 +747,12 @@ def solve_problem(initial_state_dict : dict):
             print(f"{replanner.name} returned:")
             for start, action, duration in plan.timed_actions:
                 if duration != None:
-                    print(f"{float(start)}: {action} [{float(duration)}]")
+                    # print(f"{float(start)}: {action} [{float(duration)}]")
                     action_sequence.append({'action': action, 'start': float(start), 'duration': float(duration), 'is_instantaneous': 0})
                     # start_t, end_t = _extract_action_timings(action.action, start=start, duration=duration)
                     # print(_get_timepoint_effects(action.action, start=start_t, timing=end_t, duration=duration))
                 else:
-                    print(f"{float(start)}: {action}")
+                    # print(f"{float(start)}: {action}")
                     action_sequence.append({'action': action, 'start': float(start), 'is_instantaneous': 1})
 
             
@@ -712,6 +769,8 @@ def solve_problem(initial_state_dict : dict):
         #     print(f"Table location: {table_loc}")
         #     replanner.add_goal(Eaten(customers[1]))
         #     replanner.add_goal(Clean(cur_table))
+        #     replanner.add_goal(Seated(customers[2]))
+        #     replanner.add_goal(Occupied(table_tr))
         #     # replanner.add_goal(Holds(server_1))
 
         #     new_result = replanner.resolve()
@@ -729,13 +788,13 @@ def solve_problem(initial_state_dict : dict):
         #     else:
         #         print(f"{replanner.name} failed to find a plan")
 
-        # else:
-        #     print(f"{replanner.name} failed to find a plan")  
+        else:
+            print(f"{replanner.name} failed to find a plan")  
 
     print(f"Time taken: {time.time() - start_time}")
-    # action_sequence = sorted(action_sequence, key=lambda x: (x['start'], -x['is_instantaneous']))
-    # for action in action_sequence:
-    #     print(action['start'], action['action'])
+    action_sequence = sorted(action_sequence, key=lambda x: (x['start'], -x['is_instantaneous']))
+    for action in action_sequence:
+        print(action['start'], action['action'])
 
     print("Done")
 
