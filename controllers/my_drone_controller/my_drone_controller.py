@@ -311,11 +311,11 @@ class HandleCommands:
                     cur_node_name = n_name
         
         # handle roundabouts
-        print(f"cur_node_name: {cur_node_name}, node_name: {node_name}")
+        # print(f"cur_node_name: {cur_node_name}, node_name: {node_name}")
         if set([cur_node_name, node_name]) == {"tl_1", "tl_2"}:
-            print("cur coord: ", cur_node.fisical_position)
-            print("node coord: ", node.fisical_position)
-            print("mid coord: ", (node.fisical_position[0] + cur_node.fisical_position[0])/2, (node.fisical_position[1]+3))
+            # print("cur coord: ", cur_node.fisical_position)
+            # print("node coord: ", node.fisical_position)
+            # print("mid coord: ", (node.fisical_position[0] + cur_node.fisical_position[0])/2, (node.fisical_position[1]+3))
             self.go_to_goal((node.fisical_position[0] - 2), (node.fisical_position[1] + cur_node.fisical_position[1])/2, MAX_ALTITUDE)
         elif set([cur_node_name, node_name]) == {"bl_1", "bl_2"}:
             self.go_to_goal((node.fisical_position[0] + 2), (node.fisical_position[1] + cur_node.fisical_position[1])/2, MAX_ALTITUDE)
@@ -344,7 +344,7 @@ class HandleCommands:
         self.emitter.send(str(messege).encode('utf-8'))
         self.emitter.setChannel(CPU_CHANNEL)
 
-        messege = (CPU_CHANNEL, "group_picked", group_num)
+        messege = (CPU_CHANNEL, "group_picked", f'g{group_num}')
         self.emitter.setChannel(CPU_CHANNEL)
 
     def send_follow_me_puls(self, group_num):
@@ -369,7 +369,7 @@ class HandleCommands:
         self.emitter.send(str(message).encode('utf-8'))
         self.emitter.setChannel(CPU_CHANNEL)
 
-        message = (DRONE_CHANNEL, "group_dropped", group_num, table_num)
+        message = (DRONE_CHANNEL, "group_dropped", f'g{group_num}', table_num)
         self.emitter.setChannel(CPU_CHANNEL)
         self.emitter.send(str(message).encode('utf-8'))
 

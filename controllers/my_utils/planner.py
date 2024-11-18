@@ -10,23 +10,29 @@ from itertools import product
 import time
 from unified_planning.plans.time_triggered_plan import _get_timepoint_effects, _extract_action_timings, _get_timepoint_simulated_effects
 
-
 def solve_problem(initial_state_dict : dict):
     '''
-    initial_state_dict should countain the following:
-    - server_1_cur_loc: server_1 current location
-    - cleaer_cur_loc: cleaner current location
-    - host_cur_loc: host current location
-    - g_following: group following the host
-    - orders: orders status of the form {order_id: {customer_id, table_id}}
-    - cust_out: list of customers that are outsid of the restaurant
-    - cust_in: customers iniside status of the form {customer_id: {table_id, seated, ready_to_order, order_taken, served, eaten, party_size}}
-    - tables: tables status of the form {table_id: {occupied, clean}}
+     initial_state_dict should countain the following:
+    - server_1: {position, holds}
+    - cleaer: {position, cleaning}
+    - host: {position, seating_customers}
+    - orders: {table_name: {food_order, food_prep_time, can_be_taken, in_making, eating_time, cleaning_time, pondering_time, ready_to_order, order_taken , served, time_bais}}
+    - customers: {customer_id: {following, table, seated, eaten, party_size}}
+    - dishes: {dish: {used, used_by}}
     - revenue: current revenue
     '''
     # Create the planning problem
-    CUST_COUNT = 5
-    DISH_COUNT = 2
+    
+    if initial_state_dict is None:
+        CUST_COUNT = 5
+    else:
+        CUST_COUNT = len(initial_state_dict['customers'])
+    
+    if initial_state_dict is None:
+        DISH_COUNT = 2
+    else:
+        DISH_COUNT = len(initial_state_dict['dishes'])
+
     problem = Problem("DinerProblem")
 
     # Define types of objects (Table, Robot, Customer)
@@ -40,35 +46,38 @@ def solve_problem(initial_state_dict : dict):
     Dish = UserType('Dish')
     # Define objects in the problem
 
-    tables = [
-        table_tl := Object('table_tl', Table),
-        table_bl := Object('table_bl', Table),
-        table_tr := Object('table_tr', Table),
-        table_br := Object('table_br', Table),
-    ]
+    if initial_state_dict is None:
+        tables = [
+            table_tl := Object('table_tl', Table),
+            table_bl := Object('table_bl', Table),
+            table_tr := Object('table_tr', Table),
+            table_br := Object('table_br', Table),
+        ]
+    else:
+        tables = [Object(k, Table) for k in initial_state_dict['orders'].keys()]
     # fake_table = Object('fake_table', Table)
     locations = [
-        (kitchen := Object("kitchen", Location)),
-        (TL1 := Object('TL1', Location)),
-        (TL2 := Object('TL2', Location)),
-        (ML1 := Object('ML1', Location)),
-        (ML2 := Object('ML2', Location)),
-        (BL1 := Object('BL1', Location)),
-        (BL2 := Object('BL2', Location)),
-        (TR1 := Object('TR1', Location)),
-        (TR2 := Object('TR2', Location)),
-        (MR1 := Object('MR1', Location)),
-        (MR2 := Object('MR2', Location)),
-        (BR1 := Object('BR1', Location)),
-        (BR2 := Object('BR2', Location)),
-        (ML := Object('ML', Location)),
-        (MR := Object('MR', Location)),
-        (TBL_TL := Object('TBL_TL', Location)),
-        (TBL_BL := Object('TBL_BL', Location)),
-        (TBL_TR := Object('TBL_TR', Location)),
-        (TBL_BR := Object('TBL_BR', Location)),
-        (K := Object('K', Location)),
-        (fake_location := Object('fake_location', Location))
+        (kitchen := Object("k_in", Location)),
+        (TL1 := Object('tl_1', Location)),
+        (TL2 := Object('tl_2', Location)),
+        (ML1 := Object('ml_1', Location)),
+        (ML2 := Object('ml_2', Location)),
+        (BL1 := Object('bl_1', Location)),
+        (BL2 := Object('bl_2', Location)),
+        (TR1 := Object('tr_1', Location)),
+        (TR2 := Object('tr_2', Location)),
+        (MR1 := Object('mr_1', Location)),
+        (MR2 := Object('mr_2', Location)),
+        (BR1 := Object('br_1', Location)),
+        (BR2 := Object('br_2', Location)),
+        (ML := Object('ml', Location)),
+        (MR := Object('mr', Location)),
+        (TBL_TL := Object('tbl_tl', Location)),
+        (TBL_BL := Object('tbl_bl', Location)),
+        (TBL_TR := Object('tbl_tr', Location)),
+        (TBL_BR := Object('tbl_br', Location)),
+        (K := Object('k', Location)),
+        # (fake_location := Object('fake_location', Location))
     ]
     robots = [
         host := Object("host", Host),
@@ -77,16 +86,69 @@ def solve_problem(initial_state_dict : dict):
         cleaner := Object("cleaner", Cleaner)
 
     ]
-    customers = [Object(f"customer_{i}", Customer) for i in range(1, CUST_COUNT+1)]
+    if initial_state_dict is None:
+        customers = [Object(f"customer_{i}", Customer) for i in range(1, CUST_COUNT+1)]
+    else:
+        customers = [Object(k , Customer) for k in initial_state_dict['customers'].keys()]
     # fake_customer = Object('fake_customer', Customer)
     # orders = [Object(f'order_{table}', Order) for table in tables]
     # fake_order = Object('fake_order', Order)
-    dishes = [Object(f'dish_{i}', Dish) for i in range(1, DISH_COUNT+1)]
+    if initial_state_dict is None:
+        dishes = [Object(f'dish_{i}', Dish) for i in range(1, DISH_COUNT+1)]
+    else:
+        dishes = [Object(k, Dish) for k in initial_state_dict['dishes'].keys()]
+
     problem.add_objects(locations + tables + robots + customers + dishes)
     # Predicates
     Adjacent = Fluent("Adjacent", BoolType(), loc1=Location,
                       loc2=Location)  # location1 is adjacent to location2
     Distance = Fluent("Distance", IntType(), loc1=Location, loc2=Location)
+    Distance_To_Home = Fluent("Distance_To_Home", IntType(), loc=Location)
+    TL1_Distances ={
+        TL1: 0,
+        TL2: 17,
+        ML: 12,
+        ML1: 12,
+        ML2: 13,
+        BL1: 17,
+        BL2: 17,
+        TBL_TL: 9,
+        TBL_BL: 13,
+        TR1: 19,
+        TR2: 31,
+        MR: 22,
+        MR1: 22,
+        MR2: 27,
+        BR1: 19,
+        BR2: 30,
+        TBL_TR: 25,
+        TBL_BR: 25,
+        K: 25,
+        kitchen: 26
+    }
+
+    '''
+    actual drone distances
+    tl_2: 18.560000000000002
+    ml: 11.520000000000003
+    ml_1: 11.584000000000003
+    ml_2: 13.376000000000005
+    bl_1: 16.895999999999987
+    bl_2: 16.960000000000008
+    tbl_tl: 9.280000000000001
+    tbl_bl: 13.120000000000005
+    tr_1: 19.456000000000017
+    tr_2: 30.976
+    mr: 24.767999999999972
+    mr_1: 21.56800000000004
+    mr_2: 26.879999999999995
+    br_1: 19.392000000000053
+    br_2: 30.464000000000055
+    tbl_tr: 24.639999999999986
+    tbl_br: 24.767999999999915
+    k: 24.831999999999994
+    k_in: 26.24000000000001
+    '''
     Distances = {
         (kitchen, K): 6,
         (K, TR1): 14,
@@ -115,7 +177,7 @@ def solve_problem(initial_state_dict : dict):
     }
 
     '''
-    actual ground distances
+    actual air distances
     (kin, k): 6.432
     (tr1, k): 14.048
     (mr1, tr1): 12.96
@@ -170,6 +232,8 @@ def solve_problem(initial_state_dict : dict):
     (ml2, mr1): 14.271999999999991
     '''
     problem.add_fluent(Adjacent, default_initial_value=False)
+    problem.add_fluent(Distance_To_Home, default_initial_value=0)
+    
     total_distances = defaultdict(int, Distances | {(loc2, loc1): dist for (loc1, loc2), dist in Distances.items()})
     for loc1, loc2 in product(locations, repeat=2):
         problem.set_initial_value(Distance(loc1, loc2), total_distances[(loc1, loc2)])
@@ -180,6 +244,9 @@ def solve_problem(initial_state_dict : dict):
         else:
             problem.set_initial_value(Adjacent(loc1, loc2), False)
             problem.set_initial_value(Adjacent(loc2, loc1), False)
+        
+    for loc in locations:
+        problem.set_initial_value(Distance_To_Home(loc), TL1_Distances[loc])
 
     # Job = Fluent('Job', IntType(), robot=Robot)
     # IsAerial = Fluent('IsAerial', BoolType(), robot=Robot)
@@ -209,8 +276,11 @@ def solve_problem(initial_state_dict : dict):
     Used_by = Fluent('Used_by', BoolType(), dish = Dish, table = Table)
     Cleaning = Fluent('Cleaning', BoolType(), cleaner = Cleaner)
 
-    for customer in customers:
-        problem.set_initial_value(Party_Size(customer), 2)
+    
+
+    if initial_state_dict is None:
+        for customer in customers:
+            problem.set_initial_value(Party_Size(customer), 2)
 
     Holds = Fluent('Holds', BoolType(), server = Server)
     Serves = Fluent('serves', BoolType(), server = Server, table =Table)
@@ -218,6 +288,9 @@ def solve_problem(initial_state_dict : dict):
     # Owner = Fluent('Owner', Customer, order=Order)
     Food_Order = Fluent('Food', IntType(), table = Table)
     Food_Prep_Time = Fluent('Food_Prep_Time', IntType(), table = Table)
+    Cleaning_Time = Fluent('Cleaning_Time', IntType(), table = Table)
+    Ordering_Time = Fluent('Ordering_Time', IntType(), table = Table)
+    Eating_Time = Fluent('Eating_Time', IntType(), table = Table)
     Can_Be_Taken = Fluent('Can_Be_Taken', BoolType(), table = Table)
 
     Stood_In = Fluent('Stood_In', BoolType(), loc=Location)
@@ -267,7 +340,7 @@ def solve_problem(initial_state_dict : dict):
     table = clean_table.parameter('table')
     loc = clean_table.parameter('loc')
 
-    clean_table.set_fixed_duration(CLEANING_TIME := 60)  # TODO: Decide on Cleaning time
+    clean_table.set_fixed_duration(CLEANING_TIME := Cleaning_Time(table))  # TODO: Decide on Cleaning time
     clean_table.add_condition(StartTiming(),Cleaner_At(rob, loc))
     clean_table.add_condition(StartTiming(),Table_At(table, loc))  
     clean_table.add_condition(StartTiming(), Not(Occupied(table)))
@@ -283,7 +356,7 @@ def solve_problem(initial_state_dict : dict):
     cust = decide_order.parameter('cust')
     table = decide_order.parameter('table')
 
-    decide_order.set_fixed_duration(ORDERING_TIME := 60)  # TODO: Decide on Ordering time
+    decide_order.set_fixed_duration(ORDERING_TIME := Ordering_Time(table))  # TODO: Decide on Ordering time
     decide_order.add_condition(StartTiming(), Seated(cust))
     decide_order.add_condition(StartTiming(), Not(Ready_To_Order(table)))
     decide_order.add_condition(StartTiming(), Not(Order_Taken(table)))
@@ -313,7 +386,7 @@ def solve_problem(initial_state_dict : dict):
     take_order.add_effect(Used_by(dish, table), True)
     take_order.add_effect(Used(dish), True)
     take_order.add_effect(Order_Taken(table), True)
-    take_order.add_effect(Food_Order(table), 20)#Times(Party_Size(cust), 20)) to be handled by simulation
+    # take_order.add_effect(Food_Order(table), 20)#Times(Party_Size(cust), 20)) to be handled by simulation
 
     # prepare the food
     make_food = DurativeAction(f'make_order', table = Table, dish=Dish)
@@ -323,7 +396,7 @@ def solve_problem(initial_state_dict : dict):
     make_food.set_fixed_duration(total_time := Food_Prep_Time(table))#Times(Party_Size(Owner(order)), PREP_TIME))
 
     make_food.add_condition(StartTiming(), Used_by(dish, table))
-    make_food.add_condition(StartTiming(), GT(Food_Order(table), 0)) # order has food
+    # make_food.add_condition(StartTiming(), GT(Food_Order(table), 0)) # order has food
     make_food.add_condition(StartTiming(), Not(Order_In_Making(table)))
     make_food.add_condition(StartTiming(), Not(Can_Be_Taken(table)))
 
@@ -370,7 +443,7 @@ def solve_problem(initial_state_dict : dict):
     cust = eat.parameter('cust')
     table = eat.parameter('table')
 
-    eat.set_fixed_duration(EATING_TIME := 120)
+    eat.set_fixed_duration(EATING_TIME := Eating_Time(table))  # TODO: Decide on Eating time
     eat.add_condition(StartTiming(), Served(table))
     eat.add_condition(StartTiming(), Seated_At(cust, table))
 
@@ -382,7 +455,7 @@ def solve_problem(initial_state_dict : dict):
     eat.add_effect(EndTiming(), Served(table), False)
     eat.add_effect(EndTiming(), Ready_To_Order(table), False)
     eat.add_effect(EndTiming(), Order_Taken(table), False)
-    eat.add_effect(EndTiming(), Food_Order(table), 0)
+    # eat.add_effect(EndTiming(), Food_Order(table), 0)
     eat.add_effect(EndTiming(), Seated_At(cust, table), False)
 
     host_move = DurativeAction('host_move', rob=Host, loc1=Location, loc2=Location)
@@ -431,13 +504,14 @@ def solve_problem(initial_state_dict : dict):
     cleaner_move.add_effect(StartTiming(), Cleaner_At(rob, loc1), False)
     cleaner_move.add_effect(EndTiming(), Stood_In(loc2), True)
 
-    go_home = DurativeAction('go_home', loc1 = Location ,rob=Host)
+    go_home = DurativeAction('go_home', rob=Host, loc1=Location)
     rob = go_home.parameter('rob')
     loc1 = go_home.parameter('loc1')
-    go_home.set_fixed_duration(9) # TODO: Decide on going home time
+    go_home.set_fixed_duration(Distance_To_Home(loc1)) # TODO: Decide on going home time
 
     go_home.add_condition(EndTiming(), Not(Stood_In(TL1)))
     go_home.add_condition(StartTiming(), Host_At(rob, loc1))
+    # go_home.add_condition(StartTiming(), Not(Host_At(rob, TL1)))
     go_home.add_condition(StartTiming(), Not(Seating_Customers(rob)))
     # go_home.add_condition(StartTiming(), Not(Stood_In(loc1)))
 
@@ -461,8 +535,9 @@ def solve_problem(initial_state_dict : dict):
     # problem.add_fluent(Adjacent, default_initial_value=False)
     problem.add_fluent(Seated_At, default_initial_value=False)
 
-    for dish in dishes:
-        problem.set_initial_value(Used(dish), False)
+    if initial_state_dict is None:
+        for dish in dishes:
+            problem.set_initial_value(Used(dish), False)
 
     # for customer in customers+[fake_customer]:
     #     problem.set_initial_value(Seated_At(customer), fake_table)
@@ -470,18 +545,28 @@ def solve_problem(initial_state_dict : dict):
     problem.add_fluent(Cleaning, default_initial_value=False)
     # problem.set_initial_value(Occupied(fake_table), True)
     problem.add_fluent(Stood_In, default_initial_value=False)
-    problem.set_initial_value(Host_At(host, TL1), True)  # Host starts at the entrance
-    problem.set_initial_value(Stood_In(TL1), True)
-    problem.set_initial_value(Server_At(server_1, K), True)  # Server starts at k
-    # problem.set_initial_value(At(server_2), BL2)  # Server starts at k
-    # problem.set_initial_value(Stood_In(BL2), True)
-    problem.set_initial_value(Stood_In(K), True)
-    problem.set_initial_value(Cleaner_At(cleaner, kitchen), True)  # Cleaner starts at the kitchen
-    problem.set_initial_value(Stood_In(kitchen), True)
-    problem.set_initial_value(Table_At(table_bl, TBL_BL), True)
-    problem.set_initial_value(Table_At(table_tl, TBL_TL), True)
-    problem.set_initial_value(Table_At(table_tr, TBL_TR), True)
-    problem.set_initial_value(Table_At(table_br, TBL_BR), True)
+
+    
+
+    if initial_state_dict is None:
+        problem.set_initial_value(Host_At(host, TL1), True)  # Host starts at the entrance
+        problem.set_initial_value(Stood_In(TL1), True)
+        problem.set_initial_value(Server_At(server_1, K), True)  # Server starts at k
+        # problem.set_initial_value(At(server_2), BL2)  # Server starts at k
+        # problem.set_initial_value(Stood_In(BL2), True)
+        problem.set_initial_value(Stood_In(K), True)
+        problem.set_initial_value(Cleaner_At(cleaner, kitchen), True)  # Cleaner starts at the kitchen
+        problem.set_initial_value(Stood_In(kitchen), True)
+        
+        problem.set_initial_value(Table_At(table_bl, TBL_BL), True)
+        problem.set_initial_value(Table_At(table_tl, TBL_TL), True)
+        problem.set_initial_value(Table_At(table_tr, TBL_TR), True)
+        problem.set_initial_value(Table_At(table_br, TBL_BR), True)
+        
+    problem.add_fluent(Cleaning_Time, default_initial_value = 60)
+    problem.add_fluent(Food_Prep_Time, default_initial_value = 60)
+    problem.add_fluent(Ordering_Time, default_initial_value = 60)
+    problem.add_fluent(Eating_Time, default_initial_value = 60)
     # problem.set_initial_value(Job(server_2), SERVER)
     # problem.set_initial_value(Table_At(fake_table), fake_location)
 
@@ -505,8 +590,75 @@ def solve_problem(initial_state_dict : dict):
     problem.add_fluent(Used_by, default_initial_value=False)
     problem.add_fluent(Distance, default_initial_value=0)
     problem.add_fluent(Holds, default_initial_value=False)
-    problem.add_fluent(Food_Prep_Time, default_initial_value=320) # 3 minutes
     problem.add_fluent(In_Rest, default_initial_value=False)
+
+    if initial_state_dict is not None:
+
+        cust_name_to_obj = {cust.name: cust for cust in customers}
+        dish_name_to_obj = {dish.name: dish for dish in dishes}
+        table_name_to_obj = {table.name: table for table in tables}
+        loc_name_to_obj = {loc.name: loc for loc in locations}
+        rob_name_to_obj = {rob.name: rob for rob in robots}
+
+        problem.set_initial_value(Server_At(server_1, loc_name_to_obj[initial_state_dict['server_1']['position']]), True)
+        problem.set_initial_value(Stood_In(loc_name_to_obj[initial_state_dict['server_1']['position']]), True)
+        problem.set_initial_value(Holds(server_1), initial_state_dict['server_1']['holds'])
+
+        problem.set_initial_value(Host_At(host, loc_name_to_obj[initial_state_dict['host']['position']]), True)
+        problem.set_initial_value(Stood_In(loc_name_to_obj[initial_state_dict['host']['position']]), True)
+        problem.set_initial_value(Seating_Customers(host), initial_state_dict['host']['seating_customers'])
+
+        problem.set_initial_value(Cleaner_At(cleaner, loc_name_to_obj[initial_state_dict['cleaner']['position']]), True)
+        problem.set_initial_value(Stood_In(loc_name_to_obj[initial_state_dict['cleaner']['position']]), True)
+        problem.set_initial_value(Cleaning(cleaner), initial_state_dict['cleaner']['cleaning'])
+
+        for cust_name, cust_dict in initial_state_dict['customers'].items():
+            cust_obj = cust_name_to_obj[cust_name]
+            problem.set_initial_value(In_Rest(cust_obj), cust_dict['in_rest'])
+            problem.set_initial_value(Seated(cust_obj), cust_dict['seated'])
+            for table_obj_ in tables:
+                if cust_dict['table'] == table_obj_.name:
+                    problem.set_initial_value(Seated_At(cust_obj, table_obj_), True)
+                else:
+                    problem.set_initial_value(Seated_At(cust_obj, table_obj_), False)
+            
+            problem.set_initial_value(Party_Size(cust_obj), cust_dict['party_size'])
+
+        for table_name, table_dict in initial_state_dict['orders'].items():
+            table_obj = table_name_to_obj[table_name]
+            problem.set_initial_value(Occupied(table_obj), table_dict['occupied'])
+            problem.set_initial_value(Clean(table_obj), table_dict['clean'])
+            problem.set_initial_value(Ready_To_Order(table_obj), table_dict['ready_to_order'])
+            problem.set_initial_value(Order_Taken(table_obj), table_dict['order_taken'])
+            problem.set_initial_value(Served(table_obj), table_dict['served'])
+            problem.set_initial_value(Can_Be_Taken(table_obj), table_dict['can_be_taken'])
+            problem.set_initial_value(Food_Order(table_obj), table_dict['food_order'])
+            problem.set_initial_value(Order_In_Making(table_obj), table_dict['in_making'])
+            problem.set_initial_value(Cleaning_Time(table_obj), table_dict['cleaning_time'])
+            problem.set_initial_value(Food_Prep_Time(table_obj), table_dict['food_prep_time'])
+            problem.set_initial_value(Ordering_Time(table_obj), table_dict['pondering_time'])
+            problem.set_initial_value(Eating_Time(table_obj), table_dict['eating_time'])
+
+
+        for dish_name, dish_dict in initial_state_dict['dishes'].items():
+            dish_obj = dish_name_to_obj[dish_name]
+            problem.set_initial_value(Used(dish_obj), dish_dict['used'])
+            for table_obj_ in tables:
+                if dish_dict['used_by'] == table_obj_.name:
+                    problem.set_initial_value(Used_by(dish_obj, table_obj_), True)
+                else:
+                    problem.set_initial_value(Used_by(dish_obj, table_obj_), False)
+
+        for table_name, table_dict in initial_state_dict['tables'].items():
+            table_obj = table_name_to_obj[table_name]
+            problem.set_initial_value(Table_At(table_obj, loc_name_to_obj[table_dict['position']]), True)
+            
+        
+        problem.set_initial_value(Revenue, initial_state_dict['revenue'])
+
+
+    print(problem.initial_values)
+
 
     # problem.add_objects([fake_customer, fake_table])
 
@@ -753,7 +905,7 @@ def solve_problem(initial_state_dict : dict):
                     # print(_get_timepoint_effects(action.action, start=start_t, timing=end_t, duration=duration))
                 else:
                     # print(f"{float(start)}: {action}")
-                    action_sequence.append({'action': action, 'start': float(start), 'is_instantaneous': 1})
+                    action_sequence.append({'action': action, 'start': float(start), 'duration': 0,'is_instantaneous': 1})
 
             
         #     bias = action_sequence[-1]['start'] if action_sequence[-1]['is_instantaneous'] else action_sequence[-1]['start'] + action_sequence[-1]['duration']
@@ -789,58 +941,16 @@ def solve_problem(initial_state_dict : dict):
         #         print(f"{replanner.name} failed to find a plan")
 
         else:
-            print(f"{replanner.name} failed to find a plan")  
+            print(f"{replanner.name} failed to find a plan")
 
     print(f"Time taken: {time.time() - start_time}")
     action_sequence = sorted(action_sequence, key=lambda x: (x['start'], -x['is_instantaneous']))
     for action in action_sequence:
-        print(action['start'], action['action'])
+        print(action['start'], action['action'], action['duration'])
 
     print("Done")
 
     return action_sequence
-
-    def parse_dict_to_problem(initial_state_dict, problem):
-        '''
-        initial_state_dict should countain the following:
-        - server_1_cur_loc: server_1 current location
-        - cleaer_cur_loc: cleaner current location
-        - host_cur_loc: host current location
-        - g_following: group following the host
-        - holds : order_id
-        - orders: orders status of the form {order_id: {customer_id, table_id, profit, prep_time}}
-        - cust_out: list of customers that are outsid of the restaurant
-        - cust_in: customers iniside status of the form {customer_id: {table_id, seated, ready_to_order, order_taken, served, eaten, party_size}}
-        - tables: tables status of the form {table_id: {occupied, clean}}
-        - revenue: current revenue
-        '''
-
-        # holds and tables and more need to be added
-
-        problem.set_initial_value(At(server_1), initial_state_dict['server_1_cur_loc'])
-        problem.set_initial_value(At(cleaner), initial_state_dict['cleaner_cur_loc'])
-        problem.set_initial_value(At(host), initial_state_dict['host_cur_loc'])
-        # set other groups not following the host
-        problem.set_initial_value(Following(host, initial_state_dict['g_following']), True)
-        for order_id, order in initial_state_dict['orders'].items():
-            problem.set_initial_value(Owner(orders[order_id]), customers[order['customer_id']])
-            problem.set_initial_value(Seated_At(customers[order['customer_id']]), tables[order['table_id']])
-            problem.set_initial_value(Used(orders[order_id]), True)
-            problem.set_initial_value(Food(orders[order_id]), order['profit'])
-            problem.set_initial_value(Food_Prep_Time(orders[order_id]), order['prep_time'])
-        for customer_id, customer in initial_state_dict['cust_in'].items():
-            problem.set_initial_value(Seated(customers[customer_id]), customer['seated'])
-            problem.set_initial_value(Ready_To_Order(customers[customer_id]), customer['ready_to_order'])
-            problem.set_initial_value(Order_Taken(customers[customer_id]), customer['order_taken'])
-            problem.set_initial_value(Served(customers[customer_id]), customer['served'])
-            problem.set_initial_value(Eaten(customers[customer_id]), customer['eaten'])
-            problem.set_initial_value(Party_Size(customers[customer_id]), customer['party_size'])
-        for table_id, table in initial_state_dict['tables'].items():
-            problem.set_initial_value(Occupied(tables[table_id]), table['occupied'])
-            problem.set_initial_value(Clean(tables[table_id]), table['clean'])
-        problem.set_initial_value(Revenue, initial_state_dict['revenue'])
-        problem.set_initial_value(Holds(server_1), initial_state_dict['holds'])
-        
 
 
     

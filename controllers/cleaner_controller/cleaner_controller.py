@@ -12,7 +12,7 @@ sys.path.append(libraries_path)
 from controller import Robot, Camera, Receiver
 import math
 from classes_and_constans import RED, GREEN, BLUE, ORANGE, NOCOLOR, CLEANER_CHANNEL, CPU_CHANNEL, PEDESTRIAN_CHANNEL
-from classes_and_constans import Location, Edge, GraphNode, Entity, Graph
+from classes_and_constans import Location, Edge, GraphNode, Entity, Graph, RATE_OF_CLEANING_TIME
 from classes_and_constans import get_graph
 from functions import get_positions_graph_from_cpu
 import numpy as np
@@ -386,10 +386,21 @@ class HandeCommands:
             
             self.receiver.nextPacket()
 
+    def sample_exponential(self, rate):
+        """Sample from an exponential distribution with the given rate."""
+        return np.random.exponential(1/rate)
+    
     def clean_table(self, table):
+        start_time = self.robot.getTime()
+        end_time = start_time + self.sample_exponential(RATE_OF_CLEANING_TIME)
+
+        while self.robot.step(self.timestep) != -1 and self.robot.getTime() < end_time:
+            pass
+        
         self.emitter.setChannel(CPU_CHANNEL)
         message = (CLEANER_CHANNEL, "table_cleaned", table)
         self.emitter.send(str(message).encode('utf-8'))
+        
 
 def run_robot(robot):
     command_handler = HandeCommands(robot)

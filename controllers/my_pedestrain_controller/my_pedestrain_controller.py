@@ -305,7 +305,7 @@ class Pedestrian(Supervisor):
         end_time = self.sample_exponential(RATE_OF_PONDER_TIME)
         print(f"Pedestrian {self.p_name} pondering for {end_time} ms")
         while pedestrian.step(pedestrian.time_step) != -1 and self.getTime() - start_time < end_time:
-            print(self.getTime() - start_time)
+            # print(self.getTime() - start_time)
             pass
         
         print("sending for waiter")

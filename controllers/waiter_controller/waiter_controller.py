@@ -128,8 +128,8 @@ class HandeCommands:
         ps_values[0] = left_ps.getValue()
         ps_values[1] = right_ps.getValue()
 
-        print("----------------------------")
-        print("Left ps: ", ps_values[0], "Right ps: ", ps_values[1])
+        # print("----------------------------")
+        # print("Left ps: ", ps_values[0], "Right ps: ", ps_values[1])
 
         for ind in range(2):
             diff = ps_values[ind] - last_ps_values[ind]
@@ -152,10 +152,10 @@ class HandeCommands:
         robot_pos[0] += vx * dt
         robot_pos[1] += vy * dt
 
-        print("Robot position: ", robot_pos)
+        # print("Robot position: ", robot_pos)
 
 
-        print("Left distance: ", dis_values[0], "Right distance: ", dis_values[1])
+        # print("Left distance: ", dis_values[0], "Right distance: ", dis_values[1])
 
         for ind in range(2):
             last_ps_values[ind] = ps_values[ind]
@@ -255,11 +255,11 @@ class HandeCommands:
         # print("Goal direction: ", goal_direction)     
 
         angle = np.arccos(np.dot(robot_direction, goal_direction)/(np.linalg.norm(robot_direction)*np.linalg.norm(goal_direction)))
-        print("Angle: ", angle)
+        # print("Angle: ", angle)
         # print("Angle: ", angle)
         closest_angle = min([rot for rot in rotations], key=lambda x: abs(x - angle))
 
-        print("Original closest angle: ", closest_angle)
+        # print("Original closest angle: ", closest_angle)
         # find direction of left/right rotation
         angle_sign = 1
         if np.cross(robot_direction, goal_direction) >= 0:
@@ -330,7 +330,7 @@ class HandeCommands:
         #     if start_node.name == "br_1":
         #         closest_angle = SIDE*angle_sign
 
-        print("Closest Angle: ", closest_angle)
+        # print("Closest Angle: ", closest_angle)
         if np.abs(closest_angle) > 0.1:
             self.make_turn(self.robot, closest_angle, self.left_motor, self.right_motor, self.max_speed, self.wheel_radius, self.distance_between_wheels, self.timestep)
         self.go_forward(self.robot, 0.1, self.left_motor, self.right_motor, self.max_speed, self.wheel_radius, self.distance_between_wheels, self.timestep)
