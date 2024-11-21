@@ -179,7 +179,7 @@ class HandeCommands:
         turn_completed = False
 
         while robot.step(timestep) != -1 and not turn_completed:
-            print("Turning")
+            # print("Turning")
             current_time = robot.getTime()
 
             if current_time < rot_end_time:
@@ -223,7 +223,7 @@ class HandeCommands:
     def go_from_node_to_node(self, start_node, end_node):
         if self.front_gps is None or self.back_gps is None:
             return
-        
+
         currnet_color = self.get_color_from_camera(self.camera.getImage(), self.camera.getWidth(), self.camera.getHeight())
         # print("Current color: ", currnet_color)
 
@@ -255,16 +255,16 @@ class HandeCommands:
         # print("Goal direction: ", goal_direction)     
 
         angle = np.arccos(np.dot(robot_direction, goal_direction)/(np.linalg.norm(robot_direction)*np.linalg.norm(goal_direction)))
-        print("Angle: ", angle)
+        # print("Angle: ", angle)
         # print("Angle: ", angle)
         closest_angle = min([rot for rot in rotations], key=lambda x: abs(x - angle))
 
-        print("Original closest angle: ", closest_angle)
+        # print("Original closest angle: ", closest_angle)
         # find direction of left/right rotation
         angle_sign = 1
         if np.cross(robot_direction, goal_direction) >= 0:
             angle_sign = -1
-        
+
         if len(start_node.get_neighbours()) == 2 and closest_angle == SIDE:
             if start_node.name == "tr_1" and end_node.name == "k" and closest_angle == SIDE:
                 if angle_sign == 1:
@@ -321,7 +321,7 @@ class HandeCommands:
                     closest_angle = SIDE
                     angle_sign = -1
                             
-        
+
         closest_angle = closest_angle * angle_sign
 
         # if len(start_node.get_neighbours()) == 3 and closest_angle == FRONT:
@@ -330,7 +330,7 @@ class HandeCommands:
         #     if start_node.name == "br_1":
         #         closest_angle = SIDE*angle_sign
 
-        print("Closest Angle: ", closest_angle)
+        # print("Closest Angle: ", closest_angle)
         if np.abs(closest_angle) > 0.1:
             self.make_turn(self.robot, closest_angle, self.left_motor, self.right_motor, self.max_speed, self.wheel_radius, self.distance_between_wheels, self.timestep)
         self.go_forward(self.robot, 0.1, self.left_motor, self.right_motor, self.max_speed, self.wheel_radius, self.distance_between_wheels, self.timestep)
@@ -363,7 +363,7 @@ class HandeCommands:
 
             self.left_motor.setVelocity(left_speed)
             self.right_motor.setVelocity(right_speed)
-        
+
         # print("Reached other node")
         self.dont_move()
         self.emitter.setChannel(CPU_CHANNEL)
@@ -383,6 +383,9 @@ class HandeCommands:
                 elif message[1] == "go_to":
                     print(message)
                     self.go_from_node_to_node(message[2], message[3])
+                    print("Cleaner: arrived at destination", message[3])
+                elif message[1] == "kill":
+                    self.kill()
             
             self.receiver.nextPacket()
 
@@ -392,15 +395,22 @@ class HandeCommands:
     
     def clean_table(self, table):
         start_time = self.robot.getTime()
-        end_time = start_time + self.sample_exponential(RATE_OF_CLEANING_TIME)
+        end_time = start_time + self.sample_exponential(RATE_OF_CLEANING_TIME)/1000
 
         while self.robot.step(self.timestep) != -1 and self.robot.getTime() < end_time:
             pass
-        
+
         self.emitter.setChannel(CPU_CHANNEL)
         message = (CLEANER_CHANNEL, "table_cleaned", table)
         self.emitter.send(str(message).encode('utf-8'))
         
+    def kill(self):
+        while self.receiver.getQueueLength() > 0:
+            self.receiver.nextPacket()
+
+        self.emitter.setChannel(CPU_CHANNEL)
+        message = (CLEANER_CHANNEL, "killed")
+        self.emitter.send(str(message).encode('utf-8'))
 
 def run_robot(robot):
     command_handler = HandeCommands(robot)

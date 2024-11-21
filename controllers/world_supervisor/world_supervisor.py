@@ -11,11 +11,12 @@ sys.path.append(libraries_path)
 
 from classes_and_constans import CPU_CHANNEL, WORLD_GENERATOR_CHANNEL, PEDESTRIAN_CHANNEL, DRONE_CHANNEL, RATE_OF_ARRIVAL, FOOD_ITEMS, RATE_OF_PREP_TIME, DISH_OCUNT
 
+CUST_NUM = 8
 init_xyloc = np.array([-2.5, -6])
 offsets = [np.array([0, 0]), np.array([0, -0.5]), np.array([-0.5, 0]), np.array([-0.5, -0.5])]
 
 GROUPS = {f'g{i}':{"members":[f'g{i}_p1', f'g{i}_p2', f'g{i}_p3', f'g{i}_p4'], 
-                   "locs_outside": [init_xyloc + offset - np.array([0,i-1]) for offset in offsets]} for i in range(1, 9)}
+                   "locs_outside": [init_xyloc + offset - np.array([0,i-1]) for offset in offsets]} for i in range(1, CUST_NUM+1)}
 
 
 class WorldGenerator(Supervisor):
@@ -31,7 +32,7 @@ class WorldGenerator(Supervisor):
         self.foods_to_be_made = dict()
         self.receiver = self.getDevice('receiver')
         self.receiver.enable(self.time_step)
-        self.dishes_status = {f"dish{i}": None for i in range(1, DISH_OCUNT + 1)}
+        self.dishes_status = {f"dish_{i}": None for i in range(1, DISH_OCUNT + 1)}
 
     def sample_exponential(self, rate):
         """Sample from an exponential distribution with the given rate."""
@@ -100,6 +101,7 @@ class WorldGenerator(Supervisor):
     def make_food(self):
         groups_to_delete = []
         for group, food in self.foods_to_be_made.items():
+            # print(self.current_time, food["time"])
             if food["time"] <= self.current_time:
                 self.emitter.setChannel(CPU_CHANNEL)
                 message = (WORLD_GENERATOR_CHANNEL, "food_ready", group, food["dish"])
@@ -120,6 +122,7 @@ class WorldGenerator(Supervisor):
                     dish = message[3]
                     food = message[4:]
                     next_food_time = self.sample_exponential(RATE_OF_PREP_TIME)
+                    print(f"Kitchen: Received food to be made: {food} for group {group} on dish {dish} time {next_food_time/1000}")
                     self.foods_to_be_made[group] = {"items": food, "time": self.current_time + next_food_time, "dish": dish}
                     if self.dishes_status[dish] is not None:
                         print(f"WARNING: Kitchen: Dish {dish} is already in use by group {self.dishes_status[dish]}")

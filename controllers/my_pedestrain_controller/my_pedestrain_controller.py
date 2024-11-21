@@ -240,7 +240,7 @@ class Pedestrian(Supervisor):
                     self.go_to_coordinate(x, y)
                     self.group_size = message[-3]
                     self.in_group = True
-                    print(f"Pedestrian {self.p_name} is in group {message[-3]}")
+                    print(f"Pedestrian {self.p_name} is in group {int(message[1][1])}")
                 
                 if message[0] == DRONE_CHANNEL and self.in_group:
                     my_group_num = int(self.p_name[1])
@@ -302,7 +302,7 @@ class Pedestrian(Supervisor):
         print(f"Pedestrian {self.p_name} is pondering")
         # Ponder
         start_time = self.getTime()
-        end_time = self.sample_exponential(RATE_OF_PONDER_TIME)
+        end_time = self.sample_exponential(RATE_OF_PONDER_TIME)/1000
         print(f"Pedestrian {self.p_name} pondering for {end_time} ms")
         while pedestrian.step(pedestrian.time_step) != -1 and self.getTime() - start_time < end_time:
             # print(self.getTime() - start_time)
@@ -310,7 +310,7 @@ class Pedestrian(Supervisor):
         
         print("sending for waiter")
         self.emitter.setChannel(CPU_CHANNEL)
-        send_message = (PEDESTRIAN_CHANNEL, "ready_to_order", int(self.p_name[1]), self.table_name)
+        send_message = (PEDESTRIAN_CHANNEL, "ready_to_order", f'g{int(self.p_name[1])}', self.table_name)
         self.emitter.send(str(send_message).encode('utf-8'))
 
     def order_food(self):
@@ -330,14 +330,14 @@ class Pedestrian(Supervisor):
 
     def eat(self):
         start_time = self.getTime()
-        end_time = self.sample_exponential(RATE_OF_EATING_TIME)
+        end_time = self.sample_exponential(RATE_OF_EATING_TIME)/1000
         print(f"Pedestrian {self.p_name} eating for {end_time} ms")
         while self.step(self.time_step) != -1 and self.getTime() - start_time < end_time:
             pass
 
         # send message to CPU
         self.emitter.setChannel(CPU_CHANNEL)
-        message = (PEDESTRIAN_CHANNEL, "finish_eating", int(self.p_name[1]))
+        message = (PEDESTRIAN_CHANNEL, "finish_eating", f'g{int(self.p_name[1])}')
         self.emitter.send(str(message).encode('utf-8'))
 
         # make group vanish

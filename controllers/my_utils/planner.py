@@ -4,7 +4,7 @@ from unified_planning.engines import engine
 from unified_planning.engines.sequential_simulator import UPSequentialSimulator
 from unified_planning.model.metrics import MaximizeExpressionOnFinalState
 from unified_planning.plans.plan import PlanKind
-from unified_planning.engines import PlanGenerationResultStatus
+from unified_planning.engines import OptimalityGuarantee, PlanGenerationResultStatus
 from collections import defaultdict
 from itertools import product
 import time
@@ -32,6 +32,8 @@ def solve_problem(initial_state_dict : dict):
         DISH_COUNT = 2
     else:
         DISH_COUNT = len(initial_state_dict['dishes'])
+    
+    PADDING = 1
 
     problem = Problem("DinerProblem")
 
@@ -127,6 +129,7 @@ def solve_problem(initial_state_dict : dict):
         kitchen: 26
     }
 
+    TL1_Distances = {k: v + PADDING for k, v in TL1_Distances.items()}
     '''
     actual drone distances
     tl_2: 18.560000000000002
@@ -176,6 +179,7 @@ def solve_problem(initial_state_dict : dict):
         (BL2, BR1): 9,
     }
 
+    Distances = {k: v + PADDING for k, v in Distances.items()}
     '''
     actual air distances
     (kin, k): 6.432
@@ -466,6 +470,7 @@ def solve_problem(initial_state_dict : dict):
 
     host_move.add_condition(StartTiming(), Adjacent(loc1, loc2))
     host_move.add_condition(StartTiming(), Host_At(rob, loc1))
+    host_move.add_condition(StartTiming(), Seating_Customers(rob))
     host_move.add_condition(EndTiming(), Not(Stood_In(loc2)))
 
     host_move.add_effect(StartTiming(), Stood_In(loc1), False)
@@ -602,7 +607,11 @@ def solve_problem(initial_state_dict : dict):
 
         problem.set_initial_value(Server_At(server_1, loc_name_to_obj[initial_state_dict['server_1']['position']]), True)
         problem.set_initial_value(Stood_In(loc_name_to_obj[initial_state_dict['server_1']['position']]), True)
-        problem.set_initial_value(Holds(server_1), initial_state_dict['server_1']['holds'])
+        problem.set_initial_value(Holds(server_1), True if initial_state_dict['server_1']['holds'] is not None else False)
+
+        for table_obj_ in tables:
+            if initial_state_dict['server_1']['holds'] == table_obj_.name:
+                problem.set_initial_value(Serves(server_1, table_obj_), True)
 
         problem.set_initial_value(Host_At(host, loc_name_to_obj[initial_state_dict['host']['position']]), True)
         problem.set_initial_value(Stood_In(loc_name_to_obj[initial_state_dict['host']['position']]), True)
@@ -610,12 +619,16 @@ def solve_problem(initial_state_dict : dict):
 
         problem.set_initial_value(Cleaner_At(cleaner, loc_name_to_obj[initial_state_dict['cleaner']['position']]), True)
         problem.set_initial_value(Stood_In(loc_name_to_obj[initial_state_dict['cleaner']['position']]), True)
-        problem.set_initial_value(Cleaning(cleaner), initial_state_dict['cleaner']['cleaning'])
+        # problem.set_initial_value(Cleaning(cleaner), initial_state_dict['cleaner']['cleaning'])
+        problem.set_initial_value(Cleaning(cleaner), False)# <----
 
         for cust_name, cust_dict in initial_state_dict['customers'].items():
             cust_obj = cust_name_to_obj[cust_name]
             problem.set_initial_value(In_Rest(cust_obj), cust_dict['in_rest'])
             problem.set_initial_value(Seated(cust_obj), cust_dict['seated'])
+            problem.set_initial_value(Following(host, cust_obj), cust_dict['following'])
+            problem.set_initial_value(Eaten(cust_obj), cust_dict['eaten'])
+
             for table_obj_ in tables:
                 if cust_dict['table'] == table_obj_.name:
                     problem.set_initial_value(Seated_At(cust_obj, table_obj_), True)
@@ -633,7 +646,8 @@ def solve_problem(initial_state_dict : dict):
             problem.set_initial_value(Served(table_obj), table_dict['served'])
             problem.set_initial_value(Can_Be_Taken(table_obj), table_dict['can_be_taken'])
             problem.set_initial_value(Food_Order(table_obj), table_dict['food_order'])
-            problem.set_initial_value(Order_In_Making(table_obj), table_dict['in_making'])
+            # problem.set_initial_value(Order_In_Making(table_obj), table_dict['in_making'])
+            problem.set_initial_value(Order_In_Making(table_obj), False) # <----
             problem.set_initial_value(Cleaning_Time(table_obj), table_dict['cleaning_time'])
             problem.set_initial_value(Food_Prep_Time(table_obj), table_dict['food_prep_time'])
             problem.set_initial_value(Ordering_Time(table_obj), table_dict['pondering_time'])
@@ -656,6 +670,8 @@ def solve_problem(initial_state_dict : dict):
         
         problem.set_initial_value(Revenue, initial_state_dict['revenue'])
 
+    
+    # printing Order_In_Making:
 
     print(problem.initial_values)
 
@@ -664,12 +680,31 @@ def solve_problem(initial_state_dict : dict):
 
     problem.add_actions([pick_up_customers, seat_customers, clean_table, decide_order, take_order, make_food, take_food, serve_food, eat, host_move, cleaner_move, server_move, go_home])
 
-    problem.add_quality_metric(MinimizeMakespan())
     # if initial_state_dict is not None:
     #     parse_dict_to_problem(initial_state_dict, problem)
 
-    for cust in customers:
-        problem.add_goal(Eaten(cust))
+    if initial_state_dict is not None:
+        for cust in customers:
+            cur_table = None
+            if not initial_state_dict['customers'][cust.name]['seated']:
+                problem.add_goal(Seated(cust))
+                continue
+            else:
+                for table_obj_ in tables:
+                    if initial_state_dict['customers'][cust.name]['table'] == table_obj_.name:
+                        cur_table = table_obj_
+
+            if not initial_state_dict['orders'][cur_table.name]['order_taken']:
+                problem.add_goal(Order_Taken(cur_table))
+            # elif not initial_state_dict['orders'][cur_table.name]['served']:
+            #     problem.add_goal(Served(cur_table))
+            elif not initial_state_dict['customers'][cust.name]['eaten']:
+                problem.add_goal(Eaten(cust))
+        
+    else:
+        for cust in customers:
+            problem.add_goal(Eaten(cust))
+
     
     # problem.add_goal(Holds(server_1))
 
@@ -680,13 +715,25 @@ def solve_problem(initial_state_dict : dict):
 
     env = get_environment()
     print(env.factory.engines)
+
+    print(problem.goals)
     # Example heuristics
     heuristics = ['hmax', 'hadd', 'hff', 'blind', 'hlandmarks']
 
-    planner_config = {
+    tamer_planner_config = {
          'heuristic': 'hff',
          'weight': 0.8,
     }
+
+    planner_config = {
+    # 'time_limit': 300,  # Time limit in seconds
+    # 'memory_limit': 1024,  # Memory limit in MB
+    # 'heuristic': 'h_add',  # Heuristic to use
+    # 'search_strategy': 'best_first',  # Search strategy
+    # Add other parameters as needed
+    # 'output_stream' : sys.stdout,
+    }
+
     
     class TemporalSimulator:
         def __init__(self, problem, replanner):
@@ -767,114 +814,6 @@ def solve_problem(initial_state_dict : dict):
             # print(action, type(action))
             pass
 
-    def convert_durative_to_instantaneous(problem: Problem) -> Problem:
-        new_problem = Problem(problem.name + "_instantaneous")
-        
-        # Copy fluents, objects, and initial state
-        for fluent in problem.fluents:
-            new_problem.add_fluent(fluent)
-        for obj in problem.objects:
-            new_problem.add_object(obj)
-        for fluent, value in problem.initial_values.items():
-            new_problem.set_initial_value(fluent, value)
-        
-        # Copy goals
-        for goal in problem.goals:
-            new_problem.add_goal(goal)
-        
-        # Convert durative actions to instantaneous actions
-        for action in problem.actions:
-            if isinstance(action, DurativeAction):
-                # Split durative action into start and end instantaneous actions
-                start_action = InstantaneousAction(action.name + "_start")
-                end_action = InstantaneousAction(action.name + "_end")
-                
-                # Copy parameters
-                for param in action.parameters:
-                    start_action.parameters.append(param)
-                    end_action.parameters.append(param)
-                
-                # Copy conditions and effects
-                for condition in action.conditions:
-                    if condition.timing.is_start():
-                        start_action.add_precondition(condition.condition)
-                    elif condition.timing.is_end():
-                        end_action.add_precondition(condition.condition)
-                for effect in action.effects:
-                    if effect.timing.is_start():
-                        start_action.add_effect(effect.fluent, effect.value)
-                    elif effect.timing.is_end():
-                        end_action.add_effect(effect.fluent, effect.value)
-                
-                new_problem.add_action(start_action)
-                new_problem.add_action(end_action)
-            else:
-                new_problem.add_action(action)
-        
-        return new_problem
-   
-    def ground_preconditions(preconditions, problem):
-        grounded_preconditions = []
-        for precondition in preconditions:
-            if precondition.is_exists():
-                # Ground the existential quantifier by iterating over all possible values
-                for typename in problem.user_types:
-                    for obj in problem.objects(typename):
-                        grounded_precondition = precondition.ground({precondition.variable: obj})
-                        grounded_preconditions.append(grounded_precondition)
-            else:
-                grounded_preconditions.append(precondition)
-        return grounded_preconditions
-
-    def ground_all_preconditions(problem: Problem) -> Problem:
-        new_problem = Problem(problem.name + "_grounded")
-    
-        # Copy fluents, objects, and initial state
-        for fluent in problem.fluents:
-            new_problem.add_fluent(fluent)
-        for typename in problem.user_types:
-            for obj in problem.objects(typename):
-                new_problem.add_object(obj)
-        for fluent, value in problem.initial_values.items():
-            new_problem.set_initial_value(fluent, value)
-        
-        # Copy goals
-        for goal in problem.goals:
-            new_problem.add_goal(goal)
-        
-        # Ground preconditions for all actions
-        for action in problem.actions:
-            if isinstance(action, DurativeAction):
-                new_action = DurativeAction(action.name)
-                # Copy parameters
-                for param in action.parameters:
-                    new_action.parameters.append(param)
-                # Ground preconditions
-                start_preconditions = [cond.condition for cond in action.conditions if isinstance(cond.timing, StartTiming)]
-                end_preconditions = [cond.condition for cond in action.conditions if isinstance(cond.timing, EndTiming)]
-                for precondition in ground_preconditions(start_preconditions, problem):
-                    new_action.add_start_precondition(precondition)
-                for precondition in ground_preconditions(end_preconditions, problem):
-                    new_action.add_end_precondition(precondition)
-                # Copy effects
-                for effect in action.effects:
-                    new_action.add_effect(effect.fluent, effect.value, effect.timing)
-                new_problem.add_action(new_action)
-            elif isinstance(action, InstantaneousAction):
-                new_action = InstantaneousAction(action.name)
-                # Copy parameters
-                for param in action.parameters:
-                    new_action.parameters.append(param)
-                # Ground preconditions
-                for precondition in ground_preconditions(action.preconditions, problem):
-                    new_action.add_precondition(precondition)
-                # Copy effects
-                for effect in action.effects:
-                    new_action.add_effect(effect.fluent, effect.value)
-                new_problem.add_action(new_action)
-        
-        return new_problem
-    
     original_problem = problem
     # grounded_problem = ground_all_preconditions(original_problem)
     # with Compiler(problem_kind=problem.kind,
@@ -890,8 +829,33 @@ def solve_problem(initial_state_dict : dict):
     #     print(fluent)
     # print(compilation_result_1.problem.goals)
     
-    with Replanner(problem=problem, name="replanner[lpg]", optimality_guarantee=PlanGenerationResultStatus.SOLVED_OPTIMALLY) as replanner:
-        result = replanner.resolve()
+    problem.add_quality_metric(MinimizeMakespan())
+
+    # with AnytimePlanner(
+    #     name = 'lpg-anytime',
+    #     params= planner_config,
+    #     problem_kind=problem.kind,
+    #     anytime_guarantee="INCREASING_QUALITY"
+    #     # problem_kind=problem.kind, anytime_guarantee="INCREASING_QUALITY"
+    # ) as planner:
+    #     for i, p in enumerate(planner.get_solutions(problem, output_stream = sys.stdout, timeout = 20)):
+    #         plan = p.plan
+    #         print(f"plan {i}")
+    #         print(len(plan.timed_actions))
+    #         for start, action, duration in plan.timed_actions:
+    #             if duration != None:
+    #                 print(f"{float(start)}: {action} [{float(duration)}]")
+    #                 # start_t, end_t = _extract_action_timings(action.action, start=start, duration=duration)
+    #                 # print(_get_timepoint_effects(action.action, start=start_t, timing=end_t, duration=duration))
+    #             else:
+    #                 print(f"{float(start)}: {action}")
+
+    #         print("Done!")
+    #         break
+
+
+    with OneshotPlanner(problem_kind=problem.kind, name = 'lpg' , optimality_guarantee = PlanGenerationResultStatus.SOLVED_OPTIMALLY) as replanner:
+        result = replanner.solve(problem)
         plan = result.plan
         # seudo_plan = result.plan
         # plan = seudo_plan.replace_action_instances(compilation_result_2.map_back_action_instance).replace_fluent_instances(compilation_result_1.map_back_fluent_instance)
@@ -945,8 +909,8 @@ def solve_problem(initial_state_dict : dict):
 
     print(f"Time taken: {time.time() - start_time}")
     action_sequence = sorted(action_sequence, key=lambda x: (x['start'], -x['is_instantaneous']))
-    for action in action_sequence:
-        print(action['start'], action['action'], action['duration'])
+    # for action in action_sequence:
+    #     print(action['start'], action['action'], action['duration'])
 
     print("Done")
 

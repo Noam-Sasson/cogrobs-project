@@ -327,11 +327,12 @@ class HandleCommands:
         message = (DRONE_CHANNEL, "reached_node", node_name)
         self.emitter.send(str(message).encode('utf-8'))
     
-    def take_group_i(self, group_num):
+    def take_group_i(self, group_name):
         """Set text on the display."""
         self.display.setColor(0xFFFFFF)  # Set the text color to blue
         height = self.display.getHeight()
         width = self.display.getWidth()
+        group_num = int(group_name[-1])
         self.display.fillRectangle(0, 0, width, height)  # Fill the background
         self.display.setColor(0x0000FF)  # Set the text color to blue
         self.display.drawText(f" Group {group_num}", 5, 5)  # Display the text
@@ -344,8 +345,9 @@ class HandleCommands:
         self.emitter.send(str(messege).encode('utf-8'))
         self.emitter.setChannel(CPU_CHANNEL)
 
-        messege = (CPU_CHANNEL, "group_picked", f'g{group_num}')
+        messege = (DRONE_CHANNEL, "group_picked", group_name)
         self.emitter.setChannel(CPU_CHANNEL)
+        self.emitter.send(str(messege).encode('utf-8'))
 
     def send_follow_me_puls(self, group_num):
         messege = (DRONE_CHANNEL, group_num, "follow_me", self.gps.getValues()[0], self.gps.getValues()[1])
@@ -353,10 +355,11 @@ class HandleCommands:
         self.emitter.send(str(messege).encode('utf-8'))
         self.emitter.setChannel(CPU_CHANNEL)
     
-    def drop_group_i(self, group_num, table_num):
+    def drop_group_i(self, group_name, table_num):
         self.display.setColor(0xFFFFFF)  # Set the text color to blue
         height = self.display.getHeight()
         width = self.display.getWidth()
+        group_num = int(group_name[-1])
         self.display.fillRectangle(0, 0, width, height)  # Fill the background
         self.display.setColor(0x0000FF)  # Set the text color to blue
         self.display.drawText(f" Group {group_num}", 5, 5)  # Display the text
@@ -369,7 +372,7 @@ class HandleCommands:
         self.emitter.send(str(message).encode('utf-8'))
         self.emitter.setChannel(CPU_CHANNEL)
 
-        message = (DRONE_CHANNEL, "group_dropped", f'g{group_num}', table_num)
+        message = (DRONE_CHANNEL, "group_dropped", group_name, table_num)
         self.emitter.setChannel(CPU_CHANNEL)
         self.emitter.send(str(message).encode('utf-8'))
 
@@ -395,10 +398,18 @@ class HandleCommands:
                     print("Drone: take group")
                 elif message[1] == "drop_group":
                     self.drop_group_i(message[2], message[3])
-                else:
-                    print("Unknown command")
+                elif message[1] == "kill":
+                    self.kill()
             
             self.receiver.nextPacket()
+
+    def kill(self):
+        while self.receiver.getQueueLength() > 0:
+            self.receiver.nextPacket()
+
+        self.emitter.setChannel(CPU_CHANNEL)
+        message = (DRONE_CHANNEL, "killed")
+        self.emitter.send(str(message).encode('utf-8'))
 
 def run_robot(robot):
     timestep = int(robot.getBasicTimeStep())

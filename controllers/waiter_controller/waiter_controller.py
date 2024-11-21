@@ -374,8 +374,9 @@ class HandeCommands:
         self.left_motor.setVelocity(0)
         self.right_motor.setVelocity(0)
 
-    def take_order(self, group_number):
+    def take_order(self, group_name, dish):
         self.emitter.setChannel(PEDESTRIAN_CHANNEL)
+        group_number = int(group_name[-1])
         message = (WAITER_CHANNEL, group_number, "make_order")
         print("Waiter: " + str(message))
         self.emitter.send(str(message).encode('utf-8'))
@@ -384,7 +385,7 @@ class HandeCommands:
                 message = ast.literal_eval(self.receiver.getString())
                 if message[0] == PEDESTRIAN_CHANNEL:
                     self.emitter.setChannel(CPU_CHANNEL)
-                    message = tuple([WAITER_CHANNEL, "order_taken", group_number] + list(message[1:]))
+                    message = tuple([WAITER_CHANNEL, "order_taken", group_name, dish] + list(message[1:]))
                     print(message)
                     self.emitter.send(str(message).encode('utf-8'))
                     break
@@ -392,26 +393,36 @@ class HandeCommands:
 
         print("Waiter: Order taken")
                 
-    def pick_up_order(self, group_number):
+    def pick_up_order(self, group_name):
+        group_number = int(group_name[-1])
         self.emitter.setChannel(CPU_CHANNEL)
-        message = (WAITER_CHANNEL, "picked_up_order", group_number)
+        message = (WAITER_CHANNEL, "picked_up_order", f'g{group_number}')
         self.emitter.send(str(message).encode('utf-8'))
 
-    def deliver_order(self, group_number):
+    def deliver_order(self, group_name):
         self.emitter.setChannel(CPU_CHANNEL)
-        message = (WAITER_CHANNEL, "order_delivered", group_number)
+        group_number = int(group_name[-1])
+        message = (WAITER_CHANNEL, "order_delivered", group_name)
         self.emitter.send(str(message).encode('utf-8'))
 
         self.emitter.setChannel(PEDESTRIAN_CHANNEL)
         message = (WAITER_CHANNEL, group_number,"order_delivered")
         self.emitter.send(str(message).encode('utf-8'))
-     
+    
+    def kill(self):
+        while self.receiver.getQueueLength() > 0:
+            self.receiver.nextPacket()
+
+        self.emitter.setChannel(CPU_CHANNEL)
+        message = (WAITER_CHANNEL, "killed")
+        self.emitter.send(str(message).encode('utf-8'))
+
     def listen_to_cpu(self):
         if self.receiver.getQueueLength() > 0:
             message = ast.literal_eval(self.receiver.getString())
             if message[0] == CPU_CHANNEL:
                 if message[1] == "take_order":
-                    self.take_order(message[2])
+                    self.take_order(message[2], message[3])
                 elif message[1] == "pick_up_order":
                     self.pick_up_order(message[2])
                 elif message[1] == "deliver_order":
@@ -419,6 +430,8 @@ class HandeCommands:
                 elif message[1] == "go_to":
                     print(message)
                     self.go_from_node_to_node(message[2], message[3])
+                elif message[1] == "kill":
+                    self.kill()
             
             self.receiver.nextPacket()
         

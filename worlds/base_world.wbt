@@ -17,8 +17,8 @@ EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/project
 WorldInfo {
 }
 Viewpoint {
-  orientation 0.5914262525227365 0.014122925092183969 -0.8062354065741301 3.103087735954315
-  position 1.7478116324836543 0.6310058449502571 13.10726616431083
+  orientation 0.6387688378755312 0.002475319954052462 -0.7693947260998533 3.135625216917692
+  position 4.55007759130532 6.375243688697026 24.48768298559018
   follow "inside"
 }
 TexturedBackground {
@@ -1320,7 +1320,7 @@ Robot {
           name "antena"
         }
       ]
-      channel 3
+      channel 4
       allowedChannels [
         6, 5, 4, 3, 2
       ]
@@ -1423,7 +1423,7 @@ Robot {
           name "antena"
         }
       ]
-      channel 1
+      channel 7
       allowedChannels [
         7, 1
       ]
@@ -1904,7 +1904,7 @@ DEF g1_p3 Pedestrian {
   ]
   bodySlot [
     Emitter {
-      channel 7
+      channel 3
       allowedChannels [
         7, 3, 1
       ]
@@ -1927,7 +1927,7 @@ DEF g1_p4 Pedestrian {
   ]
   bodySlot [
     Emitter {
-      channel 7
+      channel 3
       allowedChannels [
         7, 3, 1
       ]
@@ -1999,7 +1999,7 @@ DEF g2_p3 Pedestrian {
   shirtColor 1 0 0
   bodySlot [
     Emitter {
-      channel 1
+      channel 7
       allowedChannels [
         7, 3, 1
       ]
@@ -2023,7 +2023,7 @@ DEF g2_p4 Pedestrian {
   shirtColor 1 0 0
   bodySlot [
     Emitter {
-      channel 1
+      channel 3
       allowedChannels [
         7, 3, 1
       ]
