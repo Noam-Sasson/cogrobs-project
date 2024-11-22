@@ -267,6 +267,7 @@ class worldState:
         self.groups_to_tables = dict()
         self.tables_to_groups = dict()
         self.kitchen_state = dict()
+        self.needs_killing = 0
         self.orders = dict() # all orders that ever been made - {order_id: {customer_id, table_id, profit, prep_time}}
         self.dishes = {f"dish_{i}": {"used": False, "used_by": None} for i in range(1, self.DISH_OCUNT+1)}
         self.current_orders = {table_name: {"food_order": 0, "food_prep_time": 0, "can_be_taken": False, "in_making": False
@@ -285,6 +286,8 @@ class worldState:
         self.current_plan_idx = 0
         self.current_actions_sequence = []
         self.planning_is_needed = False
+
+        self.group_in_planning_size = 0
 
         self.waiter_command_handler = waiterCommnads(robot, WAITER_CHANNEL, timestep, self)
         self.drone_command_handler = droneCommnads(robot, DRONE_CHANNEL, timestep, self)
@@ -362,6 +365,9 @@ class worldState:
                         self.groups_states[group]['status'] = self.GROUP_INSIDE
                         self.drone["on_taking_customers"] = False
                         print(f"CPU: Group {group} picked by drone")
+                    if message[1] == "killed":
+                        self.needs_killing -= 1
+                        print(f"CPU: drone killed")
 
                 if message[0] == WAITER_CHANNEL:
                     if message[1] == "reached_node":
@@ -403,6 +409,9 @@ class worldState:
                         self.waiter["carries"] = None
                         self.current_orders[table]['time_bais'] = 0
                         self.waiter['on_serving'] = False
+                    if message[1] == "killed":
+                        self.needs_killing -= 1
+                        print(f"CPU: waiter killed")
 
                 if message[0] == CLEANER_CHANNEL:
                     if message[1] == "reached_node":
@@ -431,7 +440,10 @@ class worldState:
                         self.current_orders[table]['eating_time'] = (1/RATE_OF_EATING_TIME)/1000
                         self.current_orders[table]['pondering_time'] = (1/RATE_OF_PONDER_TIME)/1000
 
-                        print(f"CPU: Table {table} cleaned")                         
+                        print(f"CPU: Table {table} cleaned")
+                    if message[1] == "killed":
+                        self.needs_killing -= 1
+                        print(f"CPU: cleaner killed")                      
             
             receiver.nextPacket()
 
@@ -471,16 +483,19 @@ class worldState:
         
         done_planning = False
         
-        customers = {k: v for k, v in self.groups_states.items() if not (v['status'] == self.GROUP_OUTSIDE and v['eaten'] == True)} # all groups that need to be served
+        customers_needs_planning = {k: v for k, v in self.groups_states.items() if not (v['status'] == self.GROUP_OUTSIDE and v['eaten'] == True)} # all groups that need to be served
         
-        # customers = dict()
-        # for i in range(1, len(customers_needs_planning)+1):
-        #     curr_cust = f'g{i}'
-        #     if curr_cust in customers_needs_planning.keys():
-        #         customers[curr_cust] = customers_needs_planning[curr_cust]
-            
-        #     if len(customers) >= 4:
-        #         break
+        customers = dict()
+        
+        keys = sorted(list(customers_needs_planning.keys()), key=lambda x: int(x[-1]))
+
+        if len(keys) > 4:
+            keys = keys[:4]
+
+        for k in keys:
+            customers[k] = customers_needs_planning[k]
+
+        self.group_in_planning_size = len(customers)
 
         if len(customers) == 0:
             print("CPU: No customers to serve")
@@ -656,7 +671,7 @@ class worldState:
                 self.waiter['on_taking_order'] = True
                 self.waiter_command_handler.take_order(group, dish)
 
-            replanning_reasons.append(f"Group {group} ordered {dish}")
+            replanning_reasons.append(f"Waiter taking {group} order with {dish}")
             needs_replanning = True
         if action_name == 'make_order':
             table = action_args[0]
@@ -694,10 +709,20 @@ class worldState:
                 self.drone_command_handler.go_to(node)
         if action_name == 'server_move':
             node = action_args[2]
-            self.waiter_command_handler.go_to(node)
+            from_node = action_args[1]
+
+            if from_node != self.waiter["position"]:
+                replanning_reasons.append(f"Waiter is not at node {from_node}")
+                needs_replanning = True
+            else:
+                self.waiter_command_handler.go_to(node)
+
         if action_name == 'cleaner_move':
             if self.cleaner["cleaning"] is not None:
                 replanning_reasons.append(f"Cleaner is cleaning table {self.cleaner['cleaning']}")
+                needs_replanning = True
+            elif self.cleaner["position"] != action_args[1]:
+                replanning_reasons.append(f"Cleaner is not at node {action_args[1]}")
                 needs_replanning = True
             else:
                 node = action_args[2]
@@ -706,8 +731,9 @@ class worldState:
             node = action_args[1]
             self.drone_command_handler.go_to('tl_1')
 
+        customers_needs_planning = {k: v for k, v in self.groups_states.items() if not (v['status'] == self.GROUP_OUTSIDE and v['eaten'] == True)} # all groups that need to be served
         
-        if self.current_groups_count != len(self.groups_states):
+        if len(customers_needs_planning)>=4 and self.group_in_planning_size < 4:
             print("CPU: Groups count changed")
             self.current_groups_count = len(self.groups_states)
 
@@ -718,6 +744,7 @@ class worldState:
             print("CPU: ----------------- replanning reasons -----------------")
             for reason in replanning_reasons:
                 print(reason)
+                print(customers_needs_planning.keys())
             print("CPU: -----------------------------------------------------")
                 
             while self.robot.step(self.time_step) != -1 and (self.waiter['on_edge'] or self.drone['on_edge'] or self.cleaner['on_edge'] or self.drone['on_seating'] or self.waiter['on_taking_order'] or self.waiter['on_serving']):
@@ -727,13 +754,12 @@ class worldState:
             self.waiter_command_handler.kill()
             self.cleaner_command_handler.kill()
 
-            entites_count = 3
-            while self.robot.step(self.time_step) != -1 and entites_count > 0:
+            self.needs_killing = 3
+            while self.robot.step(self.time_step) != -1 and self.needs_killing > 0:
                 if self.receiver.getQueueLength() > 0:
-                    message = ast.literal_eval(self.receiver.getString())
-                    if message[1] == "killed":
-                        entites_count -= 1
-                    self.receiver.nextPacket()
+                    self.listen_to_entities(self.receiver)
+                
+                # TODO: check if works even after changes
                 
             print(f"CPU: finnished killing")
                 
