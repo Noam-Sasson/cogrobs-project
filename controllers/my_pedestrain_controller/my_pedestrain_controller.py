@@ -34,6 +34,8 @@ standing_z_position = 1.26
 vannishing_point = [0, -12, 1.26]
 vainnishing_rotaion = [0, 0, 1, 0]
 
+FOOD_ON_TABLE_HEIGHT = 0.73
+
 class Pedestrian(Supervisor):
     """Control a Pedestrian PROTO."""
 
@@ -280,6 +282,16 @@ class Pedestrian(Supervisor):
                         if message[2] == "make_order" and self.group_size == int(self.p_name[-1]):
                             self.order_food()
                         if message[2] == "order_delivered" and self.group_size  == int(self.p_name[-1]):
+                            table_food_name = self.table_name + "_food"
+                            # print(table_food_name)
+                            table_food_node = self.getFromDef(table_food_name)
+
+                            translation_field = table_food_node.getField('translation')
+
+                            # move food to the table
+                            food_position = table_food_node.getField("translation").getSFVec3f()
+                            translation_field.setSFVec3f([food_position[0], food_position[1], FOOD_ON_TABLE_HEIGHT])
+
                             self.eat()
 
                 if message[0] == PEDESTRIAN_CHANNEL and self.in_group:

@@ -13,12 +13,13 @@ EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/project
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/objects/kitchen/components/protos/Worktop.proto"
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/objects/kitchen/utensils/protos/Plate.proto"
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/objects/factory/containers/protos/PlasticCrate.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/samples/geometries/protos/TeapotMesh.proto"
 
 WorldInfo {
 }
 Viewpoint {
-  orientation 0.6387688378755312 0.002475319954052462 -0.7693947260998533 3.135625216917692
-  position 4.55007759130532 6.375243688697026 24.48768298559018
+  orientation -0.33358071836256603 -0.12504717185316147 0.9343913040842367 3.815430044615764
+  position 9.208396370106634 13.23840788670759 12.315980495052065
   follow "inside"
 }
 TexturedBackground {
@@ -54,18 +55,13 @@ Worktop {
   size 1.6 0.8 1
 }
 Plate {
-  translation -6.96 1.18 1.0499413473239252
-  rotation -0.8178329619841426 0.5754510155896491 0.00231839364330933 7.297561453948565e-16
-  radius 0.3
-}
-Plate {
-  translation -6.99 2.4 1.0499413473239252
+  translation -6.99 1.78 1.04994
   rotation -0.9985066913415763 -0.05462954542294323 -1.062923645649475e-05 1.1893970799527937e-15
   name "plate(1)"
   radius 0.3
 }
 Plate {
-  translation -6.98 3.67 1.0499413473239252
+  translation -6.98 2.91 1.04994
   rotation 0.21865437771327356 0.97580209136763 0.0007359275647386215 1.0896015397024199e-15
   name "plate(2)"
   radius 0.3
@@ -119,6 +115,43 @@ RoundTable {
   physics Physics {
   }
 }
+DEF table_bl_food Transform {
+  translation 3.21 -0.88 -1
+  scale 0.07 0.07 0.07
+  children [
+    Transform {
+      translation 2.23 2.16 0.3
+      children [
+        Shape {
+          appearance PBRAppearance {
+          }
+          geometry Cylinder {
+            height 1
+            radius 0.5
+          }
+        }
+      ]
+    }
+    Transform {
+      translation -0.61 4.07 0.67
+      children [
+        Shape {
+          appearance PBRAppearance {
+          }
+          geometry Cylinder {
+            radius 0.5
+          }
+        }
+      ]
+    }
+    Shape {
+      appearance PBRAppearance {
+      }
+      geometry TeapotMesh {
+      }
+    }
+  ]
+}
 DEF table_bl_1 Chair {
   translation 2.28 -0.83 0
 }
@@ -143,6 +176,43 @@ RoundTable {
   name "round table BR"
   physics Physics {
   }
+}
+DEF table_br_food Transform {
+  translation 3.14 6.85 -1
+  scale 0.07 0.07 0.07
+  children [
+    Transform {
+      translation 2.23 2.16 0.3
+      children [
+        Shape {
+          appearance PBRAppearance {
+          }
+          geometry Cylinder {
+            height 1
+            radius 0.5
+          }
+        }
+      ]
+    }
+    Transform {
+      translation -0.61 4.07 0.67
+      children [
+        Shape {
+          appearance PBRAppearance {
+          }
+          geometry Cylinder {
+            radius 0.5
+          }
+        }
+      ]
+    }
+    Shape {
+      appearance PBRAppearance {
+      }
+      geometry TeapotMesh {
+      }
+    }
+  ]
 }
 DEF table_br_1 Chair {
   translation 3.21473 7.70762 0
@@ -170,6 +240,43 @@ RoundTable {
   physics Physics {
   }
 }
+DEF table_tr_food Transform {
+  translation -3.13 6.74 -1
+  scale 0.07 0.07 0.07
+  children [
+    Transform {
+      translation 2.23 2.16 0.3
+      children [
+        Shape {
+          appearance PBRAppearance {
+          }
+          geometry Cylinder {
+            height 1
+            radius 0.5
+          }
+        }
+      ]
+    }
+    Transform {
+      translation -0.61 4.07 0.67
+      children [
+        Shape {
+          appearance PBRAppearance {
+          }
+          geometry Cylinder {
+            radius 0.5
+          }
+        }
+      ]
+    }
+    Shape {
+      appearance PBRAppearance {
+      }
+      geometry TeapotMesh {
+      }
+    }
+  ]
+}
 DEF table_tr_1 Chair {
   translation -3.02502 7.58264 0
   rotation 0 0 1 -1.57
@@ -195,6 +302,43 @@ RoundTable {
   name "round table TL"
   physics Physics {
   }
+}
+DEF table_tl_food Transform {
+  translation -3.12 -0.82 -1
+  scale 0.07 0.07 0.07
+  children [
+    Transform {
+      translation 2.23 2.16 0.3
+      children [
+        Shape {
+          appearance PBRAppearance {
+          }
+          geometry Cylinder {
+            height 1
+            radius 0.5
+          }
+        }
+      ]
+    }
+    Transform {
+      translation -0.61 4.07 0.67
+      children [
+        Shape {
+          appearance PBRAppearance {
+          }
+          geometry Cylinder {
+            radius 0.5
+          }
+        }
+      ]
+    }
+    Shape {
+      appearance PBRAppearance {
+      }
+      geometry TeapotMesh {
+      }
+    }
+  ]
 }
 DEF table_tl_1 Chair {
   translation -2.27655 -0.843142 0
@@ -324,11 +468,6 @@ DEF LineTrack Solid {
   ]
   name "solid(4)"
 }
-LineTrack {
-  translation -0.17 -4.52 0.0005
-  rotation 0 0 1 1.5708
-  scale 0.15 0.15 0.1
-}
 Robot {
   translation 0.150007 -0.91 0.0011
   children [
@@ -348,12 +487,6 @@ Robot {
   ]
   name "ml"
   controller "possition_emitter_controller"
-}
-LineTrack {
-  translation -0.009993 -4.52 0.0006
-  rotation 0 0 1 1.5708
-  scale 0.15 0.15 0.1
-  color 1 0 0
 }
 Robot {
   translation 0.150005 6.6 0.0011
@@ -414,18 +547,6 @@ Robot {
   ]
   name "mr_1"
   controller "possition_emitter_controller"
-}
-LineTrack {
-  translation 0.320006 -4.52 0.0028
-  rotation 0 0 1 1.5708
-  scale 0.15 0.15 1
-  color 0 1 0
-}
-LineTrack {
-  translation 0.490006 -4.52 0.0028
-  rotation 0 0 1 1.5708
-  scale 0.15 0.15 1
-  color 1 0.4 0.1
 }
 Robot {
   translation -1.14998 -0.915 0.0028
@@ -702,12 +823,6 @@ Robot {
   name "ml_1"
   controller "possition_emitter_controller"
 }
-LineTrack {
-  translation 0.150018 -4.52 0.0028
-  rotation 0 0 1 1.5708
-  scale 0.15 0.15 1
-  color 0 0 1
-}
 Robot {
   translation -6.70428 6.76747 0.684716
   rotation 0.017959896611312483 -0.01837689653263261 -0.9996698113815081 1.55856
@@ -746,9 +861,9 @@ Robot {
           name "antena"
         }
       ]
-      channel 1
+      channel 7
       allowedChannels [
-        7, 1
+        6, 7, 1
       ]
     }
     Receiver {
@@ -817,9 +932,46 @@ Robot {
       ]
       name "hand_1"
     }
-    Solid {
+    DEF platter Solid {
       translation 0 0.55 0.44
       children [
+        DEF waiter_food Transform {
+          translation -0.01 -0.05 0.05
+          scale 1e-05 1e-05 1e-05
+          children [
+            Transform {
+              translation 2.23 2.16 0.3
+              children [
+                Shape {
+                  appearance PBRAppearance {
+                  }
+                  geometry Cylinder {
+                    height 1
+                    radius 0.5
+                  }
+                }
+              ]
+            }
+            Transform {
+              translation -0.61 4.07 0.67
+              children [
+                Shape {
+                  appearance PBRAppearance {
+                  }
+                  geometry Cylinder {
+                    radius 0.5
+                  }
+                }
+              ]
+            }
+            Shape {
+              appearance PBRAppearance {
+              }
+              geometry TeapotMesh {
+              }
+            }
+          ]
+        }
         Shape {
           appearance BlanketFabric {
           }
@@ -829,9 +981,6 @@ Robot {
         }
       ]
       name "platter"
-      boundingObject Box {
-        size 0.6 0.7 0.1
-      }
     }
     Solid {
       translation 0 0 0.89
@@ -1034,7 +1183,7 @@ Robot {
       ]
       channel 1
       allowedChannels [
-        7, 1
+        6, 7, 1
       ]
     }
     Receiver {
@@ -1320,7 +1469,7 @@ Robot {
           name "antena"
         }
       ]
-      channel 4
+      channel 3
       allowedChannels [
         6, 5, 4, 3, 2
       ]
@@ -1423,7 +1572,7 @@ Robot {
           name "antena"
         }
       ]
-      channel 7
+      channel 1
       allowedChannels [
         7, 1
       ]
@@ -1881,7 +2030,7 @@ DEF g1_p2 Pedestrian {
   ]
   bodySlot [
     Emitter {
-      channel 7
+      channel 3
       allowedChannels [
         7, 3, 1
       ]
@@ -1904,7 +2053,7 @@ DEF g1_p3 Pedestrian {
   ]
   bodySlot [
     Emitter {
-      channel 3
+      channel 7
       allowedChannels [
         7, 3, 1
       ]
@@ -1927,7 +2076,7 @@ DEF g1_p4 Pedestrian {
   ]
   bodySlot [
     Emitter {
-      channel 3
+      channel 7
       allowedChannels [
         7, 3, 1
       ]
@@ -1999,7 +2148,7 @@ DEF g2_p3 Pedestrian {
   shirtColor 1 0 0
   bodySlot [
     Emitter {
-      channel 7
+      channel 3
       allowedChannels [
         7, 3, 1
       ]
@@ -2023,7 +2172,7 @@ DEF g2_p4 Pedestrian {
   shirtColor 1 0 0
   bodySlot [
     Emitter {
-      channel 3
+      channel 7
       allowedChannels [
         7, 3, 1
       ]
@@ -2119,7 +2268,7 @@ DEF g3_p4 Pedestrian {
   shirtColor 0 0 1
   bodySlot [
     Emitter {
-      channel 1
+      channel 7
       allowedChannels [
         7, 3, 1
       ]
@@ -2191,7 +2340,7 @@ DEF g4_p3 Pedestrian {
   shirtColor 1 0 1
   bodySlot [
     Emitter {
-      channel 1
+      channel 7
       allowedChannels [
         7, 3, 1
       ]
@@ -2287,7 +2436,7 @@ DEF g5_p3 Pedestrian {
   shirtColor 1 1 0
   bodySlot [
     Emitter {
-      channel 1
+      channel 7
       allowedChannels [
         7, 3, 1
       ]
@@ -2359,7 +2508,7 @@ DEF g6_p2 Pedestrian {
   shirtColor 0 1 1
   bodySlot [
     Emitter {
-      channel 1
+      channel 7
       allowedChannels [
         7, 3, 1
       ]
@@ -2383,7 +2532,7 @@ DEF g6_p3 Pedestrian {
   shirtColor 0 1 1
   bodySlot [
     Emitter {
-      channel 1
+      channel 7
       allowedChannels [
         7, 3, 1
       ]
@@ -2455,7 +2604,7 @@ DEF g7_p2 Pedestrian {
   shirtColor 1 0.4 0
   bodySlot [
     Emitter {
-      channel 1
+      channel 7
       allowedChannels [
         7, 3, 1
       ]
@@ -2503,7 +2652,7 @@ DEF g7_p4 Pedestrian {
   shirtColor 1 0.4 0
   bodySlot [
     Emitter {
-      channel 1
+      channel 7
       allowedChannels [
         7, 3, 1
       ]
@@ -2551,7 +2700,7 @@ DEF g8_p2 Pedestrian {
   shirtColor 0 0 0
   bodySlot [
     Emitter {
-      channel 1
+      channel 7
       allowedChannels [
         7, 3, 1
       ]
@@ -2599,7 +2748,7 @@ DEF g8_p4 Pedestrian {
   shirtColor 0 0 0
   bodySlot [
     Emitter {
-      channel 1
+      channel 7
       allowedChannels [
         7, 3, 1
       ]

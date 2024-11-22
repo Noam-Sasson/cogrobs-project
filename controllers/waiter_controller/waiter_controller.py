@@ -11,7 +11,7 @@ sys.path.append(libraries_path)
 
 from controller import Robot, Camera, Receiver
 import math
-from classes_and_constans import RED, GREEN, BLUE, ORANGE, NOCOLOR, WAITER_CHANNEL, CPU_CHANNEL, PEDESTRIAN_CHANNEL
+from classes_and_constans import RED, GREEN, BLUE, ORANGE, NOCOLOR, WAITER_CHANNEL, CPU_CHANNEL, PEDESTRIAN_CHANNEL, WORLD_GENERATOR_CHANNEL
 from classes_and_constans import Location, Edge, GraphNode, Entity, Graph
 from classes_and_constans import get_graph
 from functions import get_positions_graph_from_cpu
@@ -28,6 +28,7 @@ on_track = False
 FRONT = 0
 BACK = 3.14
 SIDE = 1.57
+
 
 class HandeCommands:
     def __init__(self, robot):
@@ -85,6 +86,9 @@ class HandeCommands:
         
         self.ps_values = [0, 0]
         self.dis_values = [0, 0]
+
+        # self.platter_node = robot.getDevice('platter')
+        # self.food_node = self.platter_node.getField('children')[0]
    
     def get_color_from_camera(self, image, width, height):
         # Process the image to detect color
@@ -394,12 +398,24 @@ class HandeCommands:
         print("Waiter: Order taken")
                 
     def pick_up_order(self, group_name):
+        # make food apear on the platter
+        self.emitter.setChannel(WORLD_GENERATOR_CHANNEL)
+        message = (WAITER_CHANNEL, "picked_up_order")
+        self.emitter.send(str(message).encode('utf-8'))
+
+
         group_number = int(group_name[-1])
         self.emitter.setChannel(CPU_CHANNEL)
         message = (WAITER_CHANNEL, "picked_up_order", f'g{group_number}')
         self.emitter.send(str(message).encode('utf-8'))
 
     def deliver_order(self, group_name):
+
+        # make food disapear from the platter
+        self.emitter.setChannel(WORLD_GENERATOR_CHANNEL)
+        message = (WAITER_CHANNEL, "order_delivered")
+        self.emitter.send(str(message).encode('utf-8'))
+
         self.emitter.setChannel(CPU_CHANNEL)
         group_number = int(group_name[-1])
         message = (WAITER_CHANNEL, "order_delivered", group_name)

@@ -9,7 +9,7 @@ import ast
 libraries_path = os.path.abspath('../my_utils')
 sys.path.append(libraries_path)
 
-from classes_and_constans import CPU_CHANNEL, WORLD_GENERATOR_CHANNEL, PEDESTRIAN_CHANNEL, DRONE_CHANNEL, RATE_OF_ARRIVAL, FOOD_ITEMS, RATE_OF_PREP_TIME, DISH_OCUNT
+from classes_and_constans import CPU_CHANNEL, WORLD_GENERATOR_CHANNEL, PEDESTRIAN_CHANNEL, DRONE_CHANNEL, RATE_OF_ARRIVAL, FOOD_ITEMS, RATE_OF_PREP_TIME, DISH_OCUNT, CLEANER_CHANNEL, WAITER_CHANNEL
 
 CUST_NUM = 8
 init_xyloc = np.array([-2.5, -6])
@@ -18,6 +18,10 @@ offsets = [np.array([0, 0]), np.array([0, -0.5]), np.array([-0.5, 0]), np.array(
 GROUPS = {f'g{i}':{"members":[f'g{i}_p1', f'g{i}_p2', f'g{i}_p3', f'g{i}_p4'], 
                    "locs_outside": [init_xyloc + offset - np.array([0,i-1]) for offset in offsets]} for i in range(1, CUST_NUM+1)}
 
+FOOD_NOT_ON_TABLE_HEIGHT = -1
+
+ON_PLATE_SCALE = [0.07, 0.07, 0.07]
+NOT_ON_PLATE_SCALE = [0.00001, 0.00001, 0.00001]
 
 class WorldGenerator(Supervisor):
     def __init__(self, poisson_rate):
@@ -33,12 +37,18 @@ class WorldGenerator(Supervisor):
         self.receiver = self.getDevice('receiver')
         self.receiver.enable(self.time_step)
         self.dishes_status = {f"dish_{i}": None for i in range(1, DISH_OCUNT + 1)}
+        self.food_node = self.getFromDef("waiter_food")
+        self.food_node.getField('scale').setSFVec3f(NOT_ON_PLATE_SCALE)
+
+        self.dish_1_food = self.getFromDef("dish_1_food")
+        self.dish_2_food = self.getFromDef("dish_2_food")
+
+        self.dish_1_food.getField('scale').setSFVec3f(NOT_ON_PLATE_SCALE)
+        self.dish_2_food.getField('scale').setSFVec3f(NOT_ON_PLATE_SCALE)
 
     def sample_exponential(self, rate):
         """Sample from an exponential distribution with the given rate."""
         return np.random.exponential(1/rate)
-    
-    
     
     def get_node_by_name(self, name):
         """Get a node by its DEF name."""
@@ -105,6 +115,12 @@ class WorldGenerator(Supervisor):
             if food["time"] <= self.current_time:
                 self.emitter.setChannel(CPU_CHANNEL)
                 message = (WORLD_GENERATOR_CHANNEL, "food_ready", group, food["dish"])
+
+                if self.dish_1_food.getField('scale').getSFVec3f() == NOT_ON_PLATE_SCALE:
+                    self.dish_1_food.getField('scale').setSFVec3f(ON_PLATE_SCALE)
+                elif self.dish_2_food.getField('scale').getSFVec3f() == NOT_ON_PLATE_SCALE:
+                    self.dish_2_food.getField('scale').setSFVec3f(ON_PLATE_SCALE)
+
                 self.emitter.send(str(message).encode('utf-8'))
                 groups_to_delete.append(group)
                 self.dishes_status[food["dish"]] = None
@@ -129,6 +145,30 @@ class WorldGenerator(Supervisor):
                         
                     self.dishes_status[dish] = group
                     print(f"Kitchen: Food to be made: {food} at time {next_food_time} on dish {dish}")
+            elif message[0] == CLEANER_CHANNEL:
+                if message[1] == "table_cleaned":
+                    table_name = message[2]
+
+                    table_food_name = table_name + "_food"
+                    table_food_node = self.getFromDef(table_food_name)
+
+                    translation_field = table_food_node.getField('translation')
+
+                    # move food to the table
+                    food_position = table_food_node.getField("translation").getSFVec3f()
+                    translation_field.setSFVec3f([food_position[0], food_position[1], FOOD_NOT_ON_TABLE_HEIGHT])
+
+            elif message[0] == WAITER_CHANNEL:
+                if message[1] == "picked_up_order":
+                    self.food_node.getField('scale').setSFVec3f(ON_PLATE_SCALE)
+
+                    if self.dish_1_food.getField('scale').getSFVec3f() == ON_PLATE_SCALE:
+                        self.dish_1_food.getField('scale').setSFVec3f(NOT_ON_PLATE_SCALE)
+                    elif self.dish_2_food.getField('scale').getSFVec3f() == ON_PLATE_SCALE:
+                        self.dish_2_food.getField('scale').setSFVec3f(NOT_ON_PLATE_SCALE)
+
+                elif message[1] == "order_delivered":
+                    self.food_node.getField('scale').setSFVec3f(NOT_ON_PLATE_SCALE)
 
             self.receiver.nextPacket()
 

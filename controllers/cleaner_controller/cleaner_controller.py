@@ -11,7 +11,7 @@ sys.path.append(libraries_path)
 
 from controller import Robot, Camera, Receiver
 import math
-from classes_and_constans import RED, GREEN, BLUE, ORANGE, NOCOLOR, CLEANER_CHANNEL, CPU_CHANNEL, PEDESTRIAN_CHANNEL
+from classes_and_constans import RED, GREEN, BLUE, ORANGE, NOCOLOR, CLEANER_CHANNEL, CPU_CHANNEL, PEDESTRIAN_CHANNEL, WORLD_GENERATOR_CHANNEL
 from classes_and_constans import Location, Edge, GraphNode, Entity, Graph, RATE_OF_CLEANING_TIME
 from classes_and_constans import get_graph
 from functions import get_positions_graph_from_cpu
@@ -399,7 +399,11 @@ class HandeCommands:
 
         while self.robot.step(self.timestep) != -1 and self.robot.getTime() < end_time:
             pass
-
+            
+        self.emitter.setChannel(WORLD_GENERATOR_CHANNEL)
+        message = (CLEANER_CHANNEL, "table_cleaned", table)
+        self.emitter.send(str(message).encode('utf-8'))
+        
         self.emitter.setChannel(CPU_CHANNEL)
         message = (CLEANER_CHANNEL, "table_cleaned", table)
         self.emitter.send(str(message).encode('utf-8'))
