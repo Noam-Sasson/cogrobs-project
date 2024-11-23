@@ -2,8 +2,8 @@
 
 ## Description
 
-This repository contains the code for the cogrobs project. The project is a final submition for the course "Cognitive Robots" at the University of Technion Israel.\\
-The project includes an online-planner that outputs instructions for the robots, and a simulation that runs on Webots.\\
+This repository contains the code for the cogrobs project. The project is a final submition for the course "Cognitive Robots" at the University of Technion Israel.<br>
+The project includes an online-planner that outputs instructions for the robots, and a simulation that runs on Webots.
 
 ## About the project
 
@@ -21,7 +21,7 @@ The simulation includes the following robots:
 - a host (drone) that shows the customers to their table.
 - main computer that coordinates the robots.
 
-All robot are colidable and needs to be controled in a way that won't cause any collision.\\
+All robot are colidable and needs to be controled in a way that won't cause any collision.
 
 the robots tasks:
 - collect data from sensors.
@@ -37,19 +37,19 @@ The main computer tasks:
 
 ## Usage
 
-To run the simulation, you need to install Webots.\\
-After installing Webots, you can run the simulation by opening the world file in the Webots software.\\
+To run the simulation, you need to install Webots.<br>
+After installing Webots, you can run the simulation by opening the world file in the Webots software.
 
-you can see the simulation without installing in the following link: [simulation](https://youtu.be/FZmX4vD9C5s) (with joly music for your pleasure)\\
+you can see the simulation without installing in the following link: [simulation](https://youtu.be/FZmX4vD9C5s) (with joly music for your pleasure)
 
 ## Credits
 
-The project was developed by myself and my partner.\\
+The project was developed by myself and my partner.<br>
 
 We used:
-- [2023 Bitcraze AB in Webots](https://github.com/cyberbotics/webots/tree/master/projects/robots/bitcraze).\\
-We modifeid their Crazyflie manual keyboard controler to go to a specific location.
-Which, apparently, they had already implemented themselves, and better might we add.
+- [2023 Bitcraze AB in Webots](https://github.com/cyberbotics/webots/tree/master/projects/robots/bitcraze).
+We modifeid their Crazyflie manual keyboard controler to go to a specific location.<br>
+Which, apparently, they had already implemented themselves, and better might we add.<br>
 
 - [LPG planner](https://github.com/aiplan4eu/up-lpg/blob/master/README.md) implemented on the [unified-planning library](https://unified-planning.readthedocs.io/en/latest/getting_started.html)
 
