@@ -18,8 +18,8 @@ EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/project
 WorldInfo {
 }
 Viewpoint {
-  orientation -0.19059482733527108 -0.10752546859932798 0.9757622074027735 4.148036024876385
-  position 6.771697941836182 16.628892461684927 8.68108034966974
+  orientation -0.31976738485426454 -0.21434560871129532 0.9229327058944486 4.2496526863348425
+  position 4.779786097301855 21.9748472472931 13.294705615972664
   follow "inside"
 }
 TexturedBackground {
@@ -46,25 +46,25 @@ RectangleArena {
   }
 }
 Worktop {
-  translation -6.98 2.59 0.55
-  size 0.8 4 1
+  translation -8.14 6.88 0.55
+  size 0.8 3 1
 }
 Worktop {
-  translation -7.37 0.19 0.55
+  translation -8.54 5.01 0.55
   name "worktop(1)"
   size 1.6 0.8 1
 }
 Plate {
-  translation -6.99 1.78 1.04994
+  translation -8.12 6.24 1.04994
   rotation -0.9985066913415763 -0.05462954542294323 -1.062923645649475e-05 1.1893970799527937e-15
   name "plate(1)"
   radius 0.3
 }
 DEF dish_1_food Transform {
-  translation -7 1.73 1.06
-  scale 1e-05 1e-05 1e-05
+  translation -8.16 7.56 1.06
+  scale 0.07 0.07 0.07
   children [
-    Transform {
+    Pose {
       translation 2.23 2.16 0.3
       children [
         Shape {
@@ -77,7 +77,7 @@ DEF dish_1_food Transform {
         }
       ]
     }
-    Transform {
+    Pose {
       translation -0.61 4.07 0.67
       children [
         Shape {
@@ -98,16 +98,16 @@ DEF dish_1_food Transform {
   ]
 }
 Plate {
-  translation -6.98 2.91 1.04994
+  translation -8.15 7.61 1.04994
   rotation 0.21865437771327356 0.97580209136763 0.0007359275647386215 1.0896015397024199e-15
   name "plate(2)"
   radius 0.3
 }
 DEF dish_2_food Transform {
-  translation -6.95 2.89 1.06
+  translation -8.11 6.12 1.06
   scale 1e-05 1e-05 1e-05
   children [
-    Transform {
+    Pose {
       translation 2.23 2.16 0.3
       children [
         Shape {
@@ -120,7 +120,7 @@ DEF dish_2_food Transform {
         }
       ]
     }
-    Transform {
+    Pose {
       translation -0.61 4.07 0.67
       children [
         Shape {
@@ -141,7 +141,7 @@ DEF dish_2_food Transform {
   ]
 }
 Pedestrian {
-  translation -7.62 2.37 1.27
+  translation -8.72 6.99 1.27
   name "chef"
   shirtColor 1 1 1
   bodySlot [
@@ -193,7 +193,7 @@ DEF table_bl_food Transform {
   translation 3.21 -0.88 -1
   scale 0.07 0.07 0.07
   children [
-    Transform {
+    Pose {
       translation 2.23 2.16 0.3
       children [
         Shape {
@@ -206,7 +206,7 @@ DEF table_bl_food Transform {
         }
       ]
     }
-    Transform {
+    Pose {
       translation -0.61 4.07 0.67
       children [
         Shape {
@@ -255,7 +255,7 @@ DEF table_br_food Transform {
   translation 3.14 6.85 -1
   scale 0.07 0.07 0.07
   children [
-    Transform {
+    Pose {
       translation 2.23 2.16 0.3
       children [
         Shape {
@@ -268,7 +268,7 @@ DEF table_br_food Transform {
         }
       ]
     }
-    Transform {
+    Pose {
       translation -0.61 4.07 0.67
       children [
         Shape {
@@ -318,7 +318,7 @@ DEF table_tr_food Transform {
   translation -3.13 6.74 -1
   scale 0.07 0.07 0.07
   children [
-    Transform {
+    Pose {
       translation 2.23 2.16 0.3
       children [
         Shape {
@@ -331,7 +331,7 @@ DEF table_tr_food Transform {
         }
       ]
     }
-    Transform {
+    Pose {
       translation -0.61 4.07 0.67
       children [
         Shape {
@@ -381,7 +381,7 @@ DEF table_tl_food Transform {
   translation -3.12 -0.82 -1
   scale 0.07 0.07 0.07
   children [
-    Transform {
+    Pose {
       translation 2.23 2.16 0.3
       children [
         Shape {
@@ -394,7 +394,7 @@ DEF table_tl_food Transform {
         }
       ]
     }
-    Transform {
+    Pose {
       translation -0.61 4.07 0.67
       children [
         Shape {
@@ -1013,7 +1013,7 @@ Robot {
           translation -0.01 -0.05 0.05
           scale 1e-05 1e-05 1e-05
           children [
-            Transform {
+            Pose {
               translation 2.23 2.16 0.3
               children [
                 Shape {
@@ -1026,7 +1026,7 @@ Robot {
                 }
               ]
             }
-            Transform {
+            Pose {
               translation -0.61 4.07 0.67
               children [
                 Shape {
@@ -1525,7 +1525,8 @@ Robot {
   controller "cleaner_controller"
 }
 Robot {
-  translation -7.32 -4.79 0.49
+  translation -6.73 -4.62 0.49
+  rotation 0 0 1 1.5708
   children [
     Emitter {
       translation 0.2 0.5 0.7
@@ -1544,7 +1545,7 @@ Robot {
           name "antena"
         }
       ]
-      channel 3
+      channel 4
       allowedChannels [
         6, 5, 4, 3, 2
       ]
@@ -2124,7 +2125,7 @@ Robot {
   supervisor TRUE
 }
 Wall {
-  translation -7.93 2.45 0
+  translation -9 2.45 0
   size 0.2 15.72 2.4
 }
 Wall {
@@ -2133,10 +2134,10 @@ Wall {
   size 0.2 15.72 2.4
 }
 Wall {
-  translation -0.91168 10.33 -1.99
+  translation -1.46168 10.3301 -1.99
   rotation 0 0 1 1.57
   name "wall(2)"
-  size 0.2 14 2.4
+  size 0.2 15.2 2.4
 }
 Wall {
   translation 2.13575 -5.39295 0
@@ -2145,10 +2146,10 @@ Wall {
   size 0.2 8 2.4
 }
 Wall {
-  translation -5.94425 -5.38649 0
+  translation -6.60425 -5.38589 0
   rotation 0 0 1 1.57
   name "wall(4)"
-  size 0.2 4 2.4
+  size 0.2 5 2.4
 }
 Wall {
   translation -0.689413 -11.8085 0
@@ -2230,7 +2231,7 @@ DEF g1_p3 Pedestrian {
   ]
   bodySlot [
     Emitter {
-      channel 1
+      channel 7
       allowedChannels [
         7, 3, 1
       ]
@@ -2253,7 +2254,7 @@ DEF g1_p4 Pedestrian {
   ]
   bodySlot [
     Emitter {
-      channel 7
+      channel 3
       allowedChannels [
         7, 3, 1
       ]
@@ -2421,7 +2422,7 @@ DEF g3_p3 Pedestrian {
   shirtColor 0 0 1
   bodySlot [
     Emitter {
-      channel 1
+      channel 3
       allowedChannels [
         7, 3, 1
       ]
@@ -2541,7 +2542,7 @@ DEF g4_p4 Pedestrian {
   shirtColor 1 0 1
   bodySlot [
     Emitter {
-      channel 1
+      channel 7
       allowedChannels [
         7, 3, 1
       ]
@@ -2589,7 +2590,7 @@ DEF g5_p2 Pedestrian {
   shirtColor 1 1 0
   bodySlot [
     Emitter {
-      channel 1
+      channel 7
       allowedChannels [
         7, 3, 1
       ]
@@ -2685,7 +2686,7 @@ DEF g6_p2 Pedestrian {
   shirtColor 0 1 1
   bodySlot [
     Emitter {
-      channel 7
+      channel 3
       allowedChannels [
         7, 3, 1
       ]
@@ -2733,7 +2734,7 @@ DEF g6_p4 Pedestrian {
   shirtColor 0 1 1
   bodySlot [
     Emitter {
-      channel 1
+      channel 7
       allowedChannels [
         7, 3, 1
       ]
@@ -2781,7 +2782,7 @@ DEF g7_p2 Pedestrian {
   shirtColor 1 0.4 0
   bodySlot [
     Emitter {
-      channel 7
+      channel 1
       allowedChannels [
         7, 3, 1
       ]
@@ -2877,7 +2878,7 @@ DEF g8_p2 Pedestrian {
   shirtColor 0 0 0
   bodySlot [
     Emitter {
-      channel 7
+      channel 1
       allowedChannels [
         7, 3, 1
       ]
@@ -2901,7 +2902,7 @@ DEF g8_p3 Pedestrian {
   shirtColor 0 0 0
   bodySlot [
     Emitter {
-      channel 1
+      channel 7
       allowedChannels [
         7, 3, 1
       ]
