@@ -18,8 +18,8 @@ EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/project
 WorldInfo {
 }
 Viewpoint {
-  orientation -0.33358071836256603 -0.12504717185316147 0.9343913040842367 3.815430044615764
-  position 9.208396370106634 13.23840788670759 12.315980495052065
+  orientation -0.19059482733527108 -0.10752546859932798 0.9757622074027735 4.148036024876385
+  position 6.771697941836182 16.628892461684927 8.68108034966974
   follow "inside"
 }
 TexturedBackground {
@@ -60,11 +60,85 @@ Plate {
   name "plate(1)"
   radius 0.3
 }
+DEF dish_1_food Transform {
+  translation -7 1.73 1.06
+  scale 1e-05 1e-05 1e-05
+  children [
+    Transform {
+      translation 2.23 2.16 0.3
+      children [
+        Shape {
+          appearance PBRAppearance {
+          }
+          geometry Cylinder {
+            height 1
+            radius 0.5
+          }
+        }
+      ]
+    }
+    Transform {
+      translation -0.61 4.07 0.67
+      children [
+        Shape {
+          appearance PBRAppearance {
+          }
+          geometry Cylinder {
+            radius 0.5
+          }
+        }
+      ]
+    }
+    Shape {
+      appearance PBRAppearance {
+      }
+      geometry TeapotMesh {
+      }
+    }
+  ]
+}
 Plate {
   translation -6.98 2.91 1.04994
   rotation 0.21865437771327356 0.97580209136763 0.0007359275647386215 1.0896015397024199e-15
   name "plate(2)"
   radius 0.3
+}
+DEF dish_2_food Transform {
+  translation -6.95 2.89 1.06
+  scale 1e-05 1e-05 1e-05
+  children [
+    Transform {
+      translation 2.23 2.16 0.3
+      children [
+        Shape {
+          appearance PBRAppearance {
+          }
+          geometry Cylinder {
+            height 1
+            radius 0.5
+          }
+        }
+      ]
+    }
+    Transform {
+      translation -0.61 4.07 0.67
+      children [
+        Shape {
+          appearance PBRAppearance {
+          }
+          geometry Cylinder {
+            radius 0.5
+          }
+        }
+      ]
+    }
+    Shape {
+      appearance PBRAppearance {
+      }
+      geometry TeapotMesh {
+      }
+    }
+  ]
 }
 Pedestrian {
   translation -7.62 2.37 1.27
@@ -861,7 +935,7 @@ Robot {
           name "antena"
         }
       ]
-      channel 7
+      channel 1
       allowedChannels [
         6, 7, 1
       ]
@@ -1457,6 +1531,7 @@ Robot {
       translation 0.2 0.5 0.7
       children [
         DEF antena Solid {
+          translation 0.18 -0.14 0
           children [
             Shape {
               appearance PBRAppearance {
@@ -1478,6 +1553,7 @@ Robot {
       translation 0.5 0.2 0.7
       children [
         DEF antena Solid {
+          translation -0.11 -0.49 0
           children [
             Shape {
               appearance PBRAppearance {
@@ -1497,6 +1573,107 @@ Robot {
     }
     Solid {
       children [
+        Solid {
+          translation 0.545 -0.165 0.168566
+          rotation 1 0 0 0.785398
+          children [
+            DEF eye Shape {
+              appearance PBRAppearance {
+                baseColor 1 0 0
+                roughness 1
+                metalness 0
+              }
+              geometry Box {
+                size 0.005 0.03 0.2
+              }
+            }
+          ]
+          name "r_eye"
+        }
+        Solid {
+          translation 0.545 -0.19428 0.0592842
+          rotation 1 0 0 2.09439
+          children [
+            DEF eye Shape {
+              appearance PBRAppearance {
+                baseColor 1 0 0
+                roughness 1
+                metalness 0
+              }
+              geometry Box {
+                size 0.005 0.03 0.2
+              }
+            }
+          ]
+          name "r_eye(1)"
+        }
+        Solid {
+          translation 0.545 0.1 0.168566
+          rotation 1 0 0 -0.785398
+          children [
+            DEF eye Shape {
+              appearance PBRAppearance {
+                baseColor 1 0 0
+                roughness 1
+                metalness 0
+              }
+              geometry Box {
+                size 0.005 0.03 0.2
+              }
+            }
+          ]
+          name "l_eye"
+        }
+        Solid {
+          translation 0.546 0.131 0.0592842
+          rotation 1 0 0 -2.09439
+          children [
+            DEF eye Shape {
+              appearance PBRAppearance {
+                baseColor 1 0 0
+                roughness 1
+                metalness 0
+              }
+              geometry Box {
+                size 0.005 0.03 0.2
+              }
+            }
+          ]
+          name "l_eye(1)"
+        }
+        Solid {
+          translation 0.546 0.00100058 -0.165884
+          rotation 1 0 0 -2.09439
+          children [
+            DEF eye Shape {
+              appearance PBRAppearance {
+                baseColor 1 0 0
+                roughness 1
+                metalness 0
+              }
+              geometry Box {
+                size 0.004 0.04 0.1
+              }
+            }
+          ]
+          name "mouth"
+        }
+        Solid {
+          translation 0.49 0 0
+          children [
+            Shape {
+              appearance PBRAppearance {
+                baseColor 0.7 0.8 1
+                roughness 1
+                metalness 0
+              }
+              geometry Box {
+                size 0.1 0.8 0.8
+              }
+            }
+          ]
+          name "iner_screan"
+        }
         Shape {
           appearance PBRAppearance {
             baseColor 0.5 0.5 0.5
@@ -1572,7 +1749,7 @@ Robot {
           name "antena"
         }
       ]
-      channel 1
+      channel 7
       allowedChannels [
         7, 1
       ]
@@ -1956,7 +2133,7 @@ Wall {
   size 0.2 15.72 2.4
 }
 Wall {
-  translation -0.91168 10.33 0
+  translation -0.91168 10.33 -1.99
   rotation 0 0 1 1.57
   name "wall(2)"
   size 0.2 14 2.4
@@ -2053,7 +2230,7 @@ DEF g1_p3 Pedestrian {
   ]
   bodySlot [
     Emitter {
-      channel 7
+      channel 1
       allowedChannels [
         7, 3, 1
       ]
@@ -2148,7 +2325,7 @@ DEF g2_p3 Pedestrian {
   shirtColor 1 0 0
   bodySlot [
     Emitter {
-      channel 3
+      channel 7
       allowedChannels [
         7, 3, 1
       ]
@@ -2220,7 +2397,7 @@ DEF g3_p2 Pedestrian {
   shirtColor 0 0 1
   bodySlot [
     Emitter {
-      channel 1
+      channel 7
       allowedChannels [
         7, 3, 1
       ]
@@ -2316,7 +2493,7 @@ DEF g4_p2 Pedestrian {
   shirtColor 1 0 1
   bodySlot [
     Emitter {
-      channel 1
+      channel 7
       allowedChannels [
         7, 3, 1
       ]
@@ -2460,7 +2637,7 @@ DEF g5_p4 Pedestrian {
   shirtColor 1 1 0
   bodySlot [
     Emitter {
-      channel 1
+      channel 7
       allowedChannels [
         7, 3, 1
       ]

@@ -733,7 +733,7 @@ class worldState:
 
         customers_needs_planning = {k: v for k, v in self.groups_states.items() if not (v['status'] == self.GROUP_OUTSIDE and v['eaten'] == True)} # all groups that need to be served
         
-        if len(customers_needs_planning)>=4 and self.group_in_planning_size < 4:
+        if self.group_in_planning_size < 4 and self.group_in_planning_size != len(customers_needs_planning):
             print("CPU: Groups count changed")
             self.current_groups_count = len(self.groups_states)
 
