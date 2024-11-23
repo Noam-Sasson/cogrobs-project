@@ -35,6 +35,10 @@ The main computer tasks:
 - send the temporal plan to the robots in timed manner.
 - replan if needed (due to changes in the environment or on fail).
 
+Additionally, there is a World Superviser node that is responsible for the events of (1)customers arrival and (2)food ready by the kitchen, and for other aspects of the simulation not related to the robots.
+The events of (3)customers ready to order, (4)customers finish eating are handled by the customers nodes themselves.
+The event of (5)cleaner finishes cleaning is handled by the cleaner robot itself.
+
 ## Usage
 
 To run the simulation, you need to install Webots.<br>
